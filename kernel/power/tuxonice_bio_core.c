@@ -565,7 +565,7 @@ void debug_broken_header(void)
         printk(KERN_DEBUG "Total used : %d (%ld pages).\n", total_header_bytes,
                         DIV_ROUND_UP(total_header_bytes, PAGE_SIZE));
         printk(KERN_DEBUG "Space needed now : %ld.\n",
-                        get_header_storage_needed());
+                        get_header_storage_needed(0));
         dump_block_chains();
         abort_hibernate(TOI_HEADER_TOO_BIG, "Header reservation too small.");
 }
