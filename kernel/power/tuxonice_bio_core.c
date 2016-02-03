@@ -1389,6 +1389,11 @@ static int toi_bio_initialise(int starting_cycle)
         if (result)
                 return result;
 
+        result = toi_bio_register_storage();
+
+        if (result)
+            return result;
+
         return get_signature_page();
 }
 
