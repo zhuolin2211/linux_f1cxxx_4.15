@@ -82,6 +82,14 @@ static struct kobj_attribute _name##_attr = {	\
 }
 
 extern struct pbe *restore_pblist;
+#define power_attr_ro(_name) \
+static struct kobj_attribute _name##_attr = {	\
+	.attr	= {				\
+		.name = __stringify(_name),	\
+		.mode = S_IRUGO,		\
+	},					\
+	.show	= _name##_show,			\
+}
 
 /* Preferred image size in bytes (default 500 MB) */
 extern unsigned long image_size;
