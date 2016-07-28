@@ -32,6 +32,7 @@ obj-$(CONFIG_TOI_FILE)		+= tuxonice_bio.o tuxonice_file.o
 obj-$(CONFIG_TOI_CLUSTER)	+= tuxonice_cluster.o
 
 obj-$(CONFIG_TOI_USERUI)	+= tuxonice_userui.o
+KASAN_SANITIZE_snapshot.o	:= n
 
 obj-y				+= qos.o
 obj-$(CONFIG_PM)		+= main.o

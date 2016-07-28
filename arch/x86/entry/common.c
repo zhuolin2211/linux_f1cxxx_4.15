@@ -40,10 +40,10 @@ static struct thread_info *pt_regs_to_thread_info(struct pt_regs *regs)
 
 #ifdef CONFIG_CONTEXT_TRACKING
 /* Called on entry from user mode with IRQs off. */
-__visible void enter_from_user_mode(void)
+__visible inline void enter_from_user_mode(void)
 {
 	CT_WARN_ON(ct_state() != CONTEXT_USER);
-	user_exit();
+	user_exit_irqoff();
 }
 #else
 static inline void enter_from_user_mode(void) {}
@@ -191,7 +191,7 @@ long syscall_trace_enter_phase2(struct pt_regs *regs, u32 arch,
 
 long syscall_trace_enter(struct pt_regs *regs)
 {
-	u32 arch = is_ia32_task() ? AUDIT_ARCH_I386 : AUDIT_ARCH_X86_64;
+	u32 arch = in_ia32_syscall() ? AUDIT_ARCH_I386 : AUDIT_ARCH_X86_64;
 	unsigned long phase1_result = syscall_trace_enter_phase1(regs, arch);
 
 	if (phase1_result == 0)
@@ -274,7 +274,7 @@ __visible inline void prepare_exit_to_usermode(struct pt_regs *regs)
 	ti->status &= ~TS_COMPAT;
 #endif
 
-	user_enter();
+	user_enter_irqoff();
 }
 
 #define SYSCALL_EXIT_WORK_FLAGS				\

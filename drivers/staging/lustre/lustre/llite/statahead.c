@@ -15,11 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * version 2 along with this program; If not, see
- * http://www.sun.com/software/products/lustre/docs/GPLv2.pdf
- *
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
- * CA 95054 USA or visit www.sun.com if you need additional information or
- * have any questions.
+ * http://www.gnu.org/licenses/gpl-2.0.html
  *
  * GPL HEADER END
  */
@@ -650,7 +646,7 @@ static void ll_post_statahead(struct ll_statahead_info *sai)
 		}
 	}
 
-	it->d.lustre.it_lock_handle = entry->se_handle;
+	it->it_lock_handle = entry->se_handle;
 	rc = md_revalidate_lock(ll_i2mdexp(dir), it, ll_inode2fid(dir), NULL);
 	if (rc != 1) {
 		rc = -EAGAIN;
@@ -661,8 +657,9 @@ static void ll_post_statahead(struct ll_statahead_info *sai)
 	if (rc)
 		goto out;
 
-	CDEBUG(D_DLMTRACE, "setting l_data to inode %p (%lu/%u)\n",
-	       child, child->i_ino, child->i_generation);
+	CDEBUG(D_DLMTRACE, "%s: setting l_data to inode "DFID"%p\n",
+	       ll_get_fsname(child->i_sb, NULL, 0),
+	       PFID(ll_inode2fid(child)), child);
 	ll_set_lock_data(ll_i2sbi(dir)->ll_md_exp, child, it, NULL);
 
 	entry->se_inode = child;
@@ -703,7 +700,7 @@ static int ll_statahead_interpret(struct ptlrpc_request *req,
 		 * process enqueues lock on child with parent lock held, eg.
 		 * unlink.
 		 */
-		handle = it->d.lustre.it_lock_handle;
+		handle = it->it_lock_handle;
 		ll_intent_drop_lock(it);
 	}
 
@@ -853,7 +850,7 @@ static int do_sa_revalidate(struct inode *dir, struct ll_sa_entry *entry,
 {
 	struct inode	     *inode = d_inode(dentry);
 	struct lookup_intent      it = { .it_op = IT_GETATTR,
-					 .d.lustre.it_lock_handle = 0 };
+					 .it_lock_handle = 0 };
 	struct md_enqueue_info   *minfo;
 	struct ldlm_enqueue_info *einfo;
 	int rc;
@@ -868,7 +865,7 @@ static int do_sa_revalidate(struct inode *dir, struct ll_sa_entry *entry,
 	rc = md_revalidate_lock(ll_i2mdexp(dir), &it, ll_inode2fid(inode),
 				NULL);
 	if (rc == 1) {
-		entry->se_handle = it.d.lustre.it_lock_handle;
+		entry->se_handle = it.it_lock_handle;
 		ll_intent_release(&it);
 		return 1;
 	}
@@ -1572,7 +1569,7 @@ int do_statahead_enter(struct inode *dir, struct dentry **dentryp,
 		if (entry->se_stat == SA_ENTRY_SUCC && entry->se_inode) {
 			struct inode *inode = entry->se_inode;
 			struct lookup_intent it = { .it_op = IT_GETATTR,
-						    .d.lustre.it_lock_handle =
+						    .it_lock_handle =
 						     entry->se_handle };
 			__u64 bits;
 
@@ -1591,13 +1588,11 @@ int do_statahead_enter(struct inode *dir, struct dentry **dentryp,
 					*dentryp = alias;
 				} else if (d_inode(*dentryp) != inode) {
 					/* revalidate, but inode is recreated */
-					CDEBUG(D_READA,
-					       "stale dentry %pd inode %lu/%u, statahead inode %lu/%u\n",
-					      *dentryp,
-					      d_inode(*dentryp)->i_ino,
-					      d_inode(*dentryp)->i_generation,
-					      inode->i_ino,
-					      inode->i_generation);
+					CDEBUG(D_READA, "%s: stale dentry %pd inode "DFID", statahead inode "DFID"\n",
+					       ll_get_fsname(d_inode(*dentryp)->i_sb, NULL, 0),
+					       *dentryp,
+					       PFID(ll_inode2fid(d_inode(*dentryp))),
+					       PFID(ll_inode2fid(inode)));
 					ll_sai_unplug(sai, entry);
 					return -ESTALE;
 				} else {

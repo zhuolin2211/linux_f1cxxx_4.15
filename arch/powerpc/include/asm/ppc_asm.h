@@ -286,6 +286,9 @@ n:
 
 #endif
 
+#define FUNC_START(name)	_GLOBAL(name)
+#define FUNC_END(name)
+
 /* 
  * LOAD_REG_IMMEDIATE(rn, expr)
  *   Loads the value of the constant expression 'expr' into register 'rn'
@@ -427,7 +430,10 @@ END_FTR_SECTION_IFCLR(CPU_FTR_601)
 	li	r4,1024;			\
 	mtctr	r4;				\
 	lis	r4,KERNELBASE@h;		\
+	.machine push;				\
+	.machine "power4";			\
 0:	tlbie	r4;				\
+	.machine pop;				\
 	addi	r4,r4,0x1000;			\
 	bdnz	0b
 #endif

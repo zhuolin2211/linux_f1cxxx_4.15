@@ -354,9 +354,15 @@ static struct ins_ops nop_ops = {
 	.scnprintf = nop__scnprintf,
 };
 
-/*
- * Must be sorted by name!
- */
+static struct ins_ops ret_ops = {
+	.scnprintf = ins__raw_scnprintf,
+};
+
+bool ins__is_ret(const struct ins *ins)
+{
+	return ins->ops == &ret_ops;
+}
+
 static struct ins instructions[] = {
 	{ .name = "add",   .ops  = &mov_ops, },
 	{ .name = "addl",  .ops  = &mov_ops, },
@@ -372,8 +378,8 @@ static struct ins instructions[] = {
 	{ .name = "bgt",   .ops  = &jump_ops, },
 	{ .name = "bhi",   .ops  = &jump_ops, },
 	{ .name = "bl",    .ops  = &call_ops, },
-	{ .name = "blt",   .ops  = &jump_ops, },
 	{ .name = "bls",   .ops  = &jump_ops, },
+	{ .name = "blt",   .ops  = &jump_ops, },
 	{ .name = "blx",   .ops  = &call_ops, },
 	{ .name = "bne",   .ops  = &jump_ops, },
 #endif
@@ -447,20 +453,42 @@ static struct ins instructions[] = {
 	{ .name = "xadd",  .ops  = &mov_ops, },
 	{ .name = "xbeginl", .ops  = &jump_ops, },
 	{ .name = "xbeginq", .ops  = &jump_ops, },
+	{ .name = "retq",  .ops  = &ret_ops, },
 };
 
-static int ins__cmp(const void *name, const void *insp)
+static int ins__key_cmp(const void *name, const void *insp)
 {
 	const struct ins *ins = insp;
 
 	return strcmp(name, ins->name);
 }
 
-static struct ins *ins__find(const char *name)
+static int ins__cmp(const void *a, const void *b)
+{
+	const struct ins *ia = a;
+	const struct ins *ib = b;
+
+	return strcmp(ia->name, ib->name);
+}
+
+static void ins__sort(void)
 {
 	const int nmemb = ARRAY_SIZE(instructions);
 
-	return bsearch(name, instructions, nmemb, sizeof(struct ins), ins__cmp);
+	qsort(instructions, nmemb, sizeof(struct ins), ins__cmp);
+}
+
+static struct ins *ins__find(const char *name)
+{
+	const int nmemb = ARRAY_SIZE(instructions);
+	static bool sorted;
+
+	if (!sorted) {
+		ins__sort();
+		sorted = true;
+	}
+
+	return bsearch(name, instructions, nmemb, sizeof(struct ins), ins__key_cmp);
 }
 
 int symbol__annotate_init(struct map *map __maybe_unused, struct symbol *sym)
@@ -1122,7 +1150,7 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
 	} else if (dso__is_kcore(dso)) {
 		goto fallback;
 	} else if (readlink(symfs_filename, command, sizeof(command)) < 0 ||
-		   strstr(command, "[kernel.kallsyms]") ||
+		   strstr(command, DSO__NAME_KALLSYMS) ||
 		   access(symfs_filename, R_OK)) {
 		free(filename);
 fallback:
@@ -1138,7 +1166,7 @@ fallback:
 
 	if (dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS &&
 	    !dso__is_kcore(dso)) {
-		char bf[BUILD_ID_SIZE * 2 + 16] = " with build id ";
+		char bf[SBUILD_ID_SIZE + 15] = " with build id ";
 		char *build_id_msg = NULL;
 
 		if (dso->annotate_warned)
@@ -1494,13 +1522,14 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map,
 	const char *d_filename;
 	const char *evsel_name = perf_evsel__name(evsel);
 	struct annotation *notes = symbol__annotation(sym);
+	struct sym_hist *h = annotation__histogram(notes, evsel->idx);
 	struct disasm_line *pos, *queue = NULL;
 	u64 start = map__rip_2objdump(map, sym->start);
 	int printed = 2, queue_len = 0;
 	int more = 0;
 	u64 len;
 	int width = 8;
-	int namelen, evsel_name_len, graph_dotted_len;
+	int graph_dotted_len;
 
 	filename = strdup(dso->long_name);
 	if (!filename)
@@ -1512,17 +1541,14 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map,
 		d_filename = basename(filename);
 
 	len = symbol__size(sym);
-	namelen = strlen(d_filename);
-	evsel_name_len = strlen(evsel_name);
 
 	if (perf_evsel__is_group_event(evsel))
 		width *= evsel->nr_members;
 
-	printf(" %-*.*s|	Source code & Disassembly of %s for %s\n",
-	       width, width, "Percent", d_filename, evsel_name);
+	graph_dotted_len = printf(" %-*.*s|	Source code & Disassembly of %s for %s (%" PRIu64 " samples)\n",
+	       width, width, "Percent", d_filename, evsel_name, h->sum);
 
-	graph_dotted_len = width + namelen + evsel_name_len;
-	printf("-%-*.*s-----------------------------------------\n",
+	printf("%-*.*s----\n",
 	       graph_dotted_len, graph_dotted_len, graph_dotted_line);
 
 	if (verbose)
@@ -1658,12 +1684,7 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map,
 	return 0;
 }
 
-int hist_entry__annotate(struct hist_entry *he, size_t privsize)
-{
-	return symbol__annotate(he->ms.sym, he->ms.map, privsize);
-}
-
 bool ui__has_annotation(void)
 {
-	return use_browser == 1 && sort__has_sym;
+	return use_browser == 1 && perf_hpp_list.sym;
 }

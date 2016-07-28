@@ -42,6 +42,8 @@ extern char *check_image_kernel(struct swsusp_info *info);
 extern int init_header(struct swsusp_info *info);
 
 extern char resume_file[256];
+extern int hibernate_resume_nonboot_cpu_disable(void);
+
 /*
  * Keep some memory free so that I/O operations can succeed without paging
  * [Might this be more than 4 MB?]
@@ -62,6 +64,13 @@ extern bool freezer_test_done;
 extern int hibernation_snapshot(int platform_mode);
 extern int hibernation_restore(int platform_mode);
 extern int hibernation_platform_enter(void);
+
+#ifdef CONFIG_DEBUG_RODATA
+/* kernel/power/snapshot.c */
+extern void enable_restore_image_protection(void);
+#else
+static inline void enable_restore_image_protection(void) {}
+#endif /* CONFIG_DEBUG_RODATA */
 
 #else /* !CONFIG_HIBERNATION */
 
@@ -205,6 +214,8 @@ static inline void suspend_test_finish(const char *label) {}
 
 #ifdef CONFIG_PM_SLEEP
 /* kernel/power/main.c */
+extern int __pm_notifier_call_chain(unsigned long val, int nr_to_call,
+				    int *nr_calls);
 extern int pm_notifier_call_chain(unsigned long val);
 #endif
 
