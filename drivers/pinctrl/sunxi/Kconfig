@@ -72,6 +72,11 @@ config PINCTRL_SUN50I_A64
 	bool
 	select PINCTRL_SUNXI
 
+config PINCTRL_SUN50I_A64_R
+	bool
+	depends on RESET_CONTROLLER
+	select PINCTRL_SUNXI
+
 config PINCTRL_SUN50I_H5
 	bool
 	select PINCTRL_SUNXI
