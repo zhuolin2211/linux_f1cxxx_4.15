@@ -194,8 +194,8 @@ static struct page *read_bdev_page(struct block_device *dev, int page_num)
 	}
 
 	lock_page(page);
-	bio->bi_rw = READ | REQ_SYNC;
-	submit_bio(bio);
+  bio_set_op_attrs(bio, REQ_OP_READ, REQ_SYNC);
+  submit_bio(bio);
 
 	wait_on_page_locked(page);
 	if (PageError(page)) {

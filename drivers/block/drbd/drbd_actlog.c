@@ -27,7 +27,6 @@
 #include <linux/crc32c.h>
 #include <linux/drbd.h>
 #include <linux/drbd_limits.h>
-#include <linux/dynamic_debug.h>
 #include "drbd_int.h"
 
 
@@ -149,7 +148,7 @@ static int _drbd_md_sync_page_io(struct drbd_device *device,
 
 	if ((op == REQ_OP_WRITE) && !test_bit(MD_NO_FUA, &device->flags))
 		op_flags |= REQ_FUA | REQ_PREFLUSH;
-	op_flags |= REQ_SYNC | REQ_NOIDLE;
+	op_flags |= REQ_SYNC;
 
 	bio = bio_alloc_drbd(GFP_NOIO);
 	bio->bi_bdev = bdev->md_bdev;

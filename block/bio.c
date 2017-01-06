@@ -270,11 +270,15 @@ static void bio_free(struct bio *bio)
 	}
 }
 
-void bio_init(struct bio *bio)
+void bio_init(struct bio *bio, struct bio_vec *table,
+	      unsigned short max_vecs)
 {
 	memset(bio, 0, sizeof(*bio));
 	atomic_set(&bio->__bi_remaining, 1);
 	atomic_set(&bio->__bi_cnt, 1);
+
+	bio->bi_io_vec = table;
+	bio->bi_max_vecs = max_vecs;
 }
 EXPORT_SYMBOL(bio_init);
 
@@ -480,7 +484,7 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
 		return NULL;
 
 	bio = p + front_pad;
-	bio_init(bio);
+	bio_init(bio, NULL, 0);
 
 	if (nr_iovecs > inline_vecs) {
 		unsigned long idx = 0;
@@ -580,9 +584,11 @@ void __bio_clone_fast(struct bio *bio, struct bio *bio_src)
 	 */
 	bio->bi_bdev = bio_src->bi_bdev;
 	bio_set_flag(bio, BIO_CLONED);
-	bio->bi_rw = bio_src->bi_rw;
+	bio->bi_opf = bio_src->bi_opf;
 	bio->bi_iter = bio_src->bi_iter;
 	bio->bi_io_vec = bio_src->bi_io_vec;
+
+	bio_clone_blkcg_association(bio, bio_src);
 }
 EXPORT_SYMBOL(__bio_clone_fast);
 
@@ -661,22 +667,24 @@ struct bio *bio_clone_bioset(struct bio *bio_src, gfp_t gfp_mask,
 	if (!bio)
 		return NULL;
 	bio->bi_bdev		= bio_src->bi_bdev;
-	bio->bi_rw		= bio_src->bi_rw;
+	bio->bi_opf		= bio_src->bi_opf;
 	bio->bi_iter.bi_sector	= bio_src->bi_iter.bi_sector;
 	bio->bi_iter.bi_size	= bio_src->bi_iter.bi_size;
 
-	if (bio_op(bio) == REQ_OP_DISCARD)
-		goto integrity_clone;
-
-	if (bio_op(bio) == REQ_OP_WRITE_SAME) {
+	switch (bio_op(bio)) {
+	case REQ_OP_DISCARD:
+	case REQ_OP_SECURE_ERASE:
+	case REQ_OP_WRITE_ZEROES:
+		break;
+	case REQ_OP_WRITE_SAME:
 		bio->bi_io_vec[bio->bi_vcnt++] = bio_src->bi_io_vec[0];
-		goto integrity_clone;
+		break;
+	default:
+		bio_for_each_segment(bv, bio_src, iter)
+			bio->bi_io_vec[bio->bi_vcnt++] = bv;
+		break;
 	}
 
-	bio_for_each_segment(bv, bio_src, iter)
-		bio->bi_io_vec[bio->bi_vcnt++] = bv;
-
-integrity_clone:
 	if (bio_integrity(bio_src)) {
 		int ret;
 
@@ -686,6 +694,8 @@ integrity_clone:
 			return NULL;
 		}
 	}
+
+	bio_clone_blkcg_association(bio, bio_src);
 
 	return bio;
 }
@@ -842,6 +852,55 @@ done:
 }
 EXPORT_SYMBOL(bio_add_page);
 
+/**
+ * bio_iov_iter_get_pages - pin user or kernel pages and add them to a bio
+ * @bio: bio to add pages to
+ * @iter: iov iterator describing the region to be mapped
+ *
+ * Pins as many pages from *iter and appends them to @bio's bvec array. The
+ * pages will have to be released using put_page() when done.
+ */
+int bio_iov_iter_get_pages(struct bio *bio, struct iov_iter *iter)
+{
+	unsigned short nr_pages = bio->bi_max_vecs - bio->bi_vcnt;
+	struct bio_vec *bv = bio->bi_io_vec + bio->bi_vcnt;
+	struct page **pages = (struct page **)bv;
+	size_t offset, diff;
+	ssize_t size;
+
+	size = iov_iter_get_pages(iter, pages, LONG_MAX, nr_pages, &offset);
+	if (unlikely(size <= 0))
+		return size ? size : -EFAULT;
+	nr_pages = (size + offset + PAGE_SIZE - 1) / PAGE_SIZE;
+
+	/*
+	 * Deep magic below:  We need to walk the pinned pages backwards
+	 * because we are abusing the space allocated for the bio_vecs
+	 * for the page array.  Because the bio_vecs are larger than the
+	 * page pointers by definition this will always work.  But it also
+	 * means we can't use bio_add_page, so any changes to it's semantics
+	 * need to be reflected here as well.
+	 */
+	bio->bi_iter.bi_size += size;
+	bio->bi_vcnt += nr_pages;
+
+	diff = (nr_pages * PAGE_SIZE - offset) - size;
+	while (nr_pages--) {
+		bv[nr_pages].bv_page = pages[nr_pages];
+		bv[nr_pages].bv_len = PAGE_SIZE;
+		bv[nr_pages].bv_offset = 0;
+	}
+
+	bv[0].bv_offset += offset;
+	bv[0].bv_len -= offset;
+	if (diff)
+		bv[bio->bi_vcnt - 1].bv_len -= diff;
+
+	iov_iter_advance(iter, size);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(bio_iov_iter_get_pages);
+
 struct submit_bio_ret {
 	struct completion event;
 	int error;
@@ -869,7 +928,7 @@ int submit_bio_wait(struct bio *bio)
 	init_completion(&ret.event);
 	bio->bi_private = &ret;
 	bio->bi_end_io = submit_bio_wait_endio;
-	bio->bi_rw |= REQ_SYNC;
+	bio->bi_opf |= REQ_SYNC;
 	submit_bio(bio);
 	wait_for_completion_io(&ret.event);
 
@@ -1063,7 +1122,7 @@ static int bio_copy_to_iter(struct bio *bio, struct iov_iter iter)
 	return 0;
 }
 
-static void bio_free_pages(struct bio *bio)
+void bio_free_pages(struct bio *bio)
 {
 	struct bio_vec *bvec;
 	int i;
@@ -1071,6 +1130,7 @@ static void bio_free_pages(struct bio *bio)
 	bio_for_each_segment_all(bvec, bio, i)
 		__free_page(bvec->bv_page);
 }
+EXPORT_SYMBOL(bio_free_pages);
 
 /**
  *	bio_uncopy_user	-	finish previously mapped bio
@@ -1269,7 +1329,7 @@ struct bio *bio_map_user_iov(struct request_queue *q,
 
 		nr_pages += end - start;
 		/*
-		 * buffer must be aligned to at least hardsector size for now
+		 * buffer must be aligned to at least logical block size for now
 		 */
 		if (uaddr & queue_dma_alignment(q))
 			return ERR_PTR(-EINVAL);
@@ -1780,15 +1840,7 @@ struct bio *bio_split(struct bio *bio, int sectors,
 	BUG_ON(sectors <= 0);
 	BUG_ON(sectors >= bio_sectors(bio));
 
-	/*
-	 * Discards need a mutable bio_vec to accommodate the payload
-	 * required by the DSM TRIM and UNMAP commands.
-	 */
-	if (bio_op(bio) == REQ_OP_DISCARD)
-		split = bio_clone_bioset(bio, gfp, bs);
-	else
-		split = bio_clone_fast(bio, gfp, bs);
-
+	split = bio_clone_fast(bio, gfp, bs);
 	if (!split)
 		return NULL;
 
@@ -2002,6 +2054,17 @@ void bio_disassociate_task(struct bio *bio)
 		css_put(bio->bi_css);
 		bio->bi_css = NULL;
 	}
+}
+
+/**
+ * bio_clone_blkcg_association - clone blkcg association from src to dst bio
+ * @dst: destination bio
+ * @src: source bio
+ */
+void bio_clone_blkcg_association(struct bio *dst, struct bio *src)
+{
+	if (src->bi_css)
+		WARN_ON(bio_associate_blkcg(dst, src->bi_css));
 }
 
 #endif /* CONFIG_BLK_CGROUP */

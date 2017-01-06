@@ -168,17 +168,6 @@ config MPIC_BROKEN_REGREAD
 	  well, but enabling it uses about 8KB of memory to keep copies
 	  of the register contents in software.
 
-config IBMVIO
-	depends on PPC_PSERIES
-	bool
-	default y
-
-config IBMEBUS
-	depends on PPC_PSERIES
-	bool "Support for GX bus based adapters"
-	help
-	  Bus device driver for GX bus based adapters.
-
 config EEH
 	bool
 	depends on (PPC_POWERNV || PPC_PSERIES) && PCI
@@ -320,6 +309,17 @@ config OF_RTC
 	help
 	  Uses information from the OF or flattened device tree to instantiate
 	  platform devices for direct mapped RTC chips like the DS1742 or DS1743.
+
+config GEN_RTC
+	bool "Use the platform RTC operations from user space"
+	select RTC_CLASS
+	select RTC_DRV_GENERIC
+	help
+	  This option provides backwards compatibility with the old gen_rtc.ko
+	  module that was traditionally used for old PowerPC machines.
+	  Platforms should migrate to enabling the RTC_DRV_GENERIC by hand
+	  replacing their get_rtc_time/set_rtc_time callbacks with
+	  a proper RTC device driver.
 
 config SIMPLE_GPIO
 	bool "Support for simple, memory-mapped GPIO controllers"

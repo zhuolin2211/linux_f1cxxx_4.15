@@ -4854,20 +4854,17 @@ static int
 lpfc_enable_pci_dev(struct lpfc_hba *phba)
 {
 	struct pci_dev *pdev;
-	int bars = 0;
 
 	/* Obtain PCI device reference */
 	if (!phba->pcidev)
 		goto out_error;
 	else
 		pdev = phba->pcidev;
-	/* Select PCI BARs */
-	bars = pci_select_bars(pdev, IORESOURCE_MEM);
 	/* Enable PCI device */
 	if (pci_enable_device_mem(pdev))
 		goto out_error;
 	/* Request PCI resource for the device */
-	if (pci_request_selected_regions(pdev, bars, LPFC_DRIVER_NAME))
+	if (pci_request_mem_regions(pdev, LPFC_DRIVER_NAME))
 		goto out_disable_device;
 	/* Set up device as PCI master and save state for EEH */
 	pci_set_master(pdev);
@@ -4884,7 +4881,7 @@ out_disable_device:
 	pci_disable_device(pdev);
 out_error:
 	lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
-			"1401 Failed to enable pci device, bars:x%x\n", bars);
+			"1401 Failed to enable pci device\n");
 	return -ENODEV;
 }
 
@@ -4899,17 +4896,14 @@ static void
 lpfc_disable_pci_dev(struct lpfc_hba *phba)
 {
 	struct pci_dev *pdev;
-	int bars;
 
 	/* Obtain PCI device reference */
 	if (!phba->pcidev)
 		return;
 	else
 		pdev = phba->pcidev;
-	/* Select PCI BARs */
-	bars = pci_select_bars(pdev, IORESOURCE_MEM);
 	/* Release PCI resource and disable PCI device */
-	pci_release_selected_regions(pdev, bars);
+	pci_release_mem_regions(pdev);
 	pci_disable_device(pdev);
 
 	return;
@@ -6285,34 +6279,36 @@ lpfc_setup_bg(struct lpfc_hba *phba, struct Scsi_Host *shost)
 	uint32_t old_guard;
 
 	int pagecnt = 10;
-	if (lpfc_prot_mask && lpfc_prot_guard) {
+	if (phba->cfg_prot_mask && phba->cfg_prot_guard) {
 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
 				"1478 Registering BlockGuard with the "
 				"SCSI layer\n");
 
-		old_mask = lpfc_prot_mask;
-		old_guard = lpfc_prot_guard;
+		old_mask = phba->cfg_prot_mask;
+		old_guard = phba->cfg_prot_guard;
 
 		/* Only allow supported values */
-		lpfc_prot_mask &= (SHOST_DIF_TYPE1_PROTECTION |
+		phba->cfg_prot_mask &= (SHOST_DIF_TYPE1_PROTECTION |
 			SHOST_DIX_TYPE0_PROTECTION |
 			SHOST_DIX_TYPE1_PROTECTION);
-		lpfc_prot_guard &= (SHOST_DIX_GUARD_IP | SHOST_DIX_GUARD_CRC);
+		phba->cfg_prot_guard &= (SHOST_DIX_GUARD_IP |
+					 SHOST_DIX_GUARD_CRC);
 
 		/* DIF Type 1 protection for profiles AST1/C1 is end to end */
-		if (lpfc_prot_mask == SHOST_DIX_TYPE1_PROTECTION)
-			lpfc_prot_mask |= SHOST_DIF_TYPE1_PROTECTION;
+		if (phba->cfg_prot_mask == SHOST_DIX_TYPE1_PROTECTION)
+			phba->cfg_prot_mask |= SHOST_DIF_TYPE1_PROTECTION;
 
-		if (lpfc_prot_mask && lpfc_prot_guard) {
-			if ((old_mask != lpfc_prot_mask) ||
-				(old_guard != lpfc_prot_guard))
+		if (phba->cfg_prot_mask && phba->cfg_prot_guard) {
+			if ((old_mask != phba->cfg_prot_mask) ||
+				(old_guard != phba->cfg_prot_guard))
 				lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
 					"1475 Registering BlockGuard with the "
 					"SCSI layer: mask %d  guard %d\n",
-					lpfc_prot_mask, lpfc_prot_guard);
+					phba->cfg_prot_mask,
+					phba->cfg_prot_guard);
 
-			scsi_host_set_prot(shost, lpfc_prot_mask);
-			scsi_host_set_guard(shost, lpfc_prot_guard);
+			scsi_host_set_prot(shost, phba->cfg_prot_mask);
+			scsi_host_set_guard(shost, phba->cfg_prot_guard);
 		} else
 			lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
 				"1479 Not Registering BlockGuard with the SCSI "
@@ -6935,6 +6931,8 @@ lpfc_sli4_read_config(struct lpfc_hba *phba)
 	struct lpfc_mbx_get_func_cfg *get_func_cfg;
 	struct lpfc_rsrc_desc_fcfcoe *desc;
 	char *pdesc_0;
+	uint16_t forced_link_speed;
+	uint32_t if_type;
 	int length, i, rc = 0, rc2;
 
 	pmb = (LPFC_MBOXQ_t *) mempool_alloc(phba->mbox_mem_pool, GFP_KERNEL);
@@ -7027,6 +7025,58 @@ lpfc_sli4_read_config(struct lpfc_hba *phba)
 
 	if (rc)
 		goto read_cfg_out;
+
+	/* Update link speed if forced link speed is supported */
+	if_type = bf_get(lpfc_sli_intf_if_type, &phba->sli4_hba.sli_intf);
+	if (if_type == LPFC_SLI_INTF_IF_TYPE_2) {
+		forced_link_speed =
+			bf_get(lpfc_mbx_rd_conf_link_speed, rd_config);
+		if (forced_link_speed) {
+			phba->hba_flag |= HBA_FORCED_LINK_SPEED;
+
+			switch (forced_link_speed) {
+			case LINK_SPEED_1G:
+				phba->cfg_link_speed =
+					LPFC_USER_LINK_SPEED_1G;
+				break;
+			case LINK_SPEED_2G:
+				phba->cfg_link_speed =
+					LPFC_USER_LINK_SPEED_2G;
+				break;
+			case LINK_SPEED_4G:
+				phba->cfg_link_speed =
+					LPFC_USER_LINK_SPEED_4G;
+				break;
+			case LINK_SPEED_8G:
+				phba->cfg_link_speed =
+					LPFC_USER_LINK_SPEED_8G;
+				break;
+			case LINK_SPEED_10G:
+				phba->cfg_link_speed =
+					LPFC_USER_LINK_SPEED_10G;
+				break;
+			case LINK_SPEED_16G:
+				phba->cfg_link_speed =
+					LPFC_USER_LINK_SPEED_16G;
+				break;
+			case LINK_SPEED_32G:
+				phba->cfg_link_speed =
+					LPFC_USER_LINK_SPEED_32G;
+				break;
+			case 0xffff:
+				phba->cfg_link_speed =
+					LPFC_USER_LINK_SPEED_AUTO;
+				break;
+			default:
+				lpfc_printf_log(phba, KERN_ERR, LOG_SLI,
+						"0047 Unrecognized link "
+						"speed : %d\n",
+						forced_link_speed);
+				phba->cfg_link_speed =
+					LPFC_USER_LINK_SPEED_AUTO;
+			}
+		}
+	}
 
 	/* Reset the DFT_HBA_Q_DEPTH to the max xri  */
 	length = phba->sli4_hba.max_cfg_param.max_xri -
@@ -7262,6 +7312,7 @@ int
 lpfc_sli4_queue_create(struct lpfc_hba *phba)
 {
 	struct lpfc_queue *qdesc;
+	uint32_t wqesize;
 	int idx;
 
 	/*
@@ -7346,15 +7397,10 @@ lpfc_sli4_queue_create(struct lpfc_hba *phba)
 		phba->sli4_hba.fcp_cq[idx] = qdesc;
 
 		/* Create Fast Path FCP WQs */
-		if (phba->fcp_embed_io) {
-			qdesc = lpfc_sli4_queue_alloc(phba,
-						      LPFC_WQE128_SIZE,
-						      LPFC_WQE128_DEF_COUNT);
-		} else {
-			qdesc = lpfc_sli4_queue_alloc(phba,
-						      phba->sli4_hba.wq_esize,
-						      phba->sli4_hba.wq_ecount);
-		}
+		wqesize = (phba->fcp_embed_io) ?
+				LPFC_WQE128_SIZE : phba->sli4_hba.wq_esize;
+		qdesc = lpfc_sli4_queue_alloc(phba, wqesize,
+						phba->sli4_hba.wq_ecount);
 		if (!qdesc) {
 			lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
 					"0503 Failed allocate fast-path FCP "
@@ -9811,7 +9857,6 @@ lpfc_pci_remove_one_s3(struct pci_dev *pdev)
 	struct lpfc_vport **vports;
 	struct lpfc_hba   *phba = vport->phba;
 	int i;
-	int bars = pci_select_bars(pdev, IORESOURCE_MEM);
 
 	spin_lock_irq(&phba->hbalock);
 	vport->load_flag |= FC_UNLOADING;
@@ -9886,7 +9931,7 @@ lpfc_pci_remove_one_s3(struct pci_dev *pdev)
 
 	lpfc_hba_free(phba);
 
-	pci_release_selected_regions(pdev, bars);
+	pci_release_mem_regions(pdev);
 	pci_disable_device(pdev);
 }
 
@@ -10267,6 +10312,7 @@ lpfc_write_firmware(const struct firmware *fw, void *context)
 	int i, rc = 0;
 	struct lpfc_dmabuf *dmabuf, *next;
 	uint32_t offset = 0, temp_offset = 0;
+	uint32_t magic_number, ftype, fid, fsize;
 
 	/* It can be null in no-wait mode, sanity check */
 	if (!fw) {
@@ -10275,18 +10321,19 @@ lpfc_write_firmware(const struct firmware *fw, void *context)
 	}
 	image = (struct lpfc_grp_hdr *)fw->data;
 
+	magic_number = be32_to_cpu(image->magic_number);
+	ftype = bf_get_be32(lpfc_grp_hdr_file_type, image);
+	fid = bf_get_be32(lpfc_grp_hdr_id, image),
+	fsize = be32_to_cpu(image->size);
+
 	INIT_LIST_HEAD(&dma_buffer_list);
-	if ((be32_to_cpu(image->magic_number) != LPFC_GROUP_OJECT_MAGIC_NUM) ||
-	    (bf_get_be32(lpfc_grp_hdr_file_type, image) !=
-	     LPFC_FILE_TYPE_GROUP) ||
-	    (bf_get_be32(lpfc_grp_hdr_id, image) != LPFC_FILE_ID_GROUP) ||
-	    (be32_to_cpu(image->size) != fw->size)) {
+	if ((magic_number != LPFC_GROUP_OJECT_MAGIC_G5 &&
+	     magic_number != LPFC_GROUP_OJECT_MAGIC_G6) ||
+	    ftype != LPFC_FILE_TYPE_GROUP || fsize != fw->size) {
 		lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
 				"3022 Invalid FW image found. "
-				"Magic:%x Type:%x ID:%x\n",
-				be32_to_cpu(image->magic_number),
-				bf_get_be32(lpfc_grp_hdr_file_type, image),
-				bf_get_be32(lpfc_grp_hdr_id, image));
+				"Magic:%x Type:%x ID:%x Size %d %zd\n",
+				magic_number, ftype, fid, fsize, fw->size);
 		rc = -EINVAL;
 		goto release_out;
 	}

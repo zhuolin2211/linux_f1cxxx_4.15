@@ -18,6 +18,7 @@
 
 #include <linux/module.h>
 #include <linux/init.h>
+#include <linux/bio.h>
 
 #include <linux/vmalloc.h>
 #include <linux/zlib.h>
@@ -361,7 +362,6 @@ static int zisofs_readpage(struct file *file, struct page *page)
 
 const struct address_space_operations zisofs_aops = {
 	.readpage = zisofs_readpage,
-	/* No sync_page operation supported? */
 	/* No bmap operation supported */
 };
 

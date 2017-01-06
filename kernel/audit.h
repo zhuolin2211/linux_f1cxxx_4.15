@@ -212,7 +212,7 @@ extern void audit_copy_inode(struct audit_names *name,
 extern void audit_log_cap(struct audit_buffer *ab, char *prefix,
 			  kernel_cap_t *cap);
 extern void audit_log_name(struct audit_context *context,
-			   struct audit_names *n, struct path *path,
+			   struct audit_names *n, const struct path *path,
 			   int record_num, int *call_panic);
 
 extern int audit_pid;
@@ -330,6 +330,8 @@ extern char *audit_unpack_string(void **, size_t *, size_t);
 extern pid_t audit_sig_pid;
 extern kuid_t audit_sig_uid;
 extern u32 audit_sig_sid;
+
+extern int audit_filter(int msgtype, unsigned int listtype);
 
 #ifdef CONFIG_AUDITSYSCALL
 extern int __audit_signal_info(int sig, struct task_struct *t);

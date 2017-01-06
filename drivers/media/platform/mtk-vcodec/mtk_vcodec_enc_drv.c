@@ -188,7 +188,6 @@ static int fops_vcodec_open(struct file *file)
 	mtk_v4l2_debug(2, "Create instance [%d]@%p m2m_ctx=%p ",
 			ctx->id, ctx, ctx->m2m_ctx);
 
-	dev->num_instances++;
 	list_add(&ctx->list, &dev->ctx_list);
 
 	mutex_unlock(&dev->dev_mutex);
@@ -225,7 +224,6 @@ static int fops_vcodec_release(struct file *file)
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
 
 	list_del_init(&ctx->list);
-	dev->num_instances--;
 	kfree(ctx);
 	mutex_unlock(&dev->dev_mutex);
 	return 0;
@@ -246,7 +244,6 @@ static int mtk_vcodec_probe(struct platform_device *pdev)
 	struct video_device *vfd_enc;
 	struct resource *res;
 	int i, j, ret;
-	DEFINE_DMA_ATTRS(attrs);
 
 	dev = devm_kzalloc(&pdev->dev, sizeof(*dev), GFP_KERNEL);
 	if (!dev)
@@ -377,9 +374,6 @@ static int mtk_vcodec_probe(struct platform_device *pdev)
 		mtk_v4l2_err("Failed to register video device");
 		goto err_enc_reg;
 	}
-
-	/* Avoid the iommu eat big hunks */
-	dma_set_attr(DMA_ATTR_ALLOC_SINGLE_PAGES, &attrs);
 
 	mtk_v4l2_debug(0, "encoder registered as /dev/video%d",
 			vfd_enc->num);

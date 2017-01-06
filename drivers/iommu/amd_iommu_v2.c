@@ -805,8 +805,10 @@ int amd_iommu_init_device(struct pci_dev *pdev, int pasids)
 		goto out_free_domain;
 
 	group = iommu_group_get(&pdev->dev);
-	if (!group)
+	if (!group) {
+		ret = -EINVAL;
 		goto out_free_domain;
+	}
 
 	ret = iommu_attach_group(dev_state->domain, group);
 	if (ret != 0)
@@ -960,7 +962,7 @@ static int __init amd_iommu_v2_init(void)
 	spin_lock_init(&state_lock);
 
 	ret = -ENOMEM;
-	iommu_wq = create_workqueue("amd_iommu_v2");
+	iommu_wq = alloc_workqueue("amd_iommu_v2", WQ_MEM_RECLAIM, 0);
 	if (iommu_wq == NULL)
 		goto out;
 

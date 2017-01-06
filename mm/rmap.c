@@ -27,7 +27,7 @@
  *         mapping->i_mmap_rwsem
  *           anon_vma->rwsem
  *             mm->page_table_lock or pte_lock
- *               zone->lru_lock (in mark_page_accessed, isolate_lru_page)
+ *               zone_lru_lock (in mark_page_accessed, isolate_lru_page)
  *               swap_lock (in swap_duplicate, swap_info_get)
  *                 mmlist_lock (in mmput, drain_mmlist and others)
  *                 mapping->private_lock (in __set_page_dirty_buffers)
@@ -141,14 +141,15 @@ static void anon_vma_chain_link(struct vm_area_struct *vma,
 }
 
 /**
- * anon_vma_prepare - attach an anon_vma to a memory region
+ * __anon_vma_prepare - attach an anon_vma to a memory region
  * @vma: the memory region in question
  *
  * This makes sure the memory mapping described by 'vma' has
  * an 'anon_vma' attached to it, so that we can associate the
  * anonymous pages mapped into it with that anon_vma.
  *
- * The common case will be that we already have one, but if
+ * The common case will be that we already have one, which
+ * is handled inline by anon_vma_prepare(). But if
  * not we either need to find an adjacent mapping that we
  * can re-use the anon_vma from (very common when the only
  * reason for splitting a vma has been mprotect()), or we
@@ -167,48 +168,46 @@ static void anon_vma_chain_link(struct vm_area_struct *vma,
  *
  * This must be called with the mmap_sem held for reading.
  */
-int anon_vma_prepare(struct vm_area_struct *vma)
+int __anon_vma_prepare(struct vm_area_struct *vma)
 {
-	struct anon_vma *anon_vma = vma->anon_vma;
+	struct mm_struct *mm = vma->vm_mm;
+	struct anon_vma *anon_vma, *allocated;
 	struct anon_vma_chain *avc;
 
 	might_sleep();
-	if (unlikely(!anon_vma)) {
-		struct mm_struct *mm = vma->vm_mm;
-		struct anon_vma *allocated;
 
-		avc = anon_vma_chain_alloc(GFP_KERNEL);
-		if (!avc)
-			goto out_enomem;
+	avc = anon_vma_chain_alloc(GFP_KERNEL);
+	if (!avc)
+		goto out_enomem;
 
-		anon_vma = find_mergeable_anon_vma(vma);
-		allocated = NULL;
-		if (!anon_vma) {
-			anon_vma = anon_vma_alloc();
-			if (unlikely(!anon_vma))
-				goto out_enomem_free_avc;
-			allocated = anon_vma;
-		}
-
-		anon_vma_lock_write(anon_vma);
-		/* page_table_lock to protect against threads */
-		spin_lock(&mm->page_table_lock);
-		if (likely(!vma->anon_vma)) {
-			vma->anon_vma = anon_vma;
-			anon_vma_chain_link(vma, avc, anon_vma);
-			/* vma reference or self-parent link for new root */
-			anon_vma->degree++;
-			allocated = NULL;
-			avc = NULL;
-		}
-		spin_unlock(&mm->page_table_lock);
-		anon_vma_unlock_write(anon_vma);
-
-		if (unlikely(allocated))
-			put_anon_vma(allocated);
-		if (unlikely(avc))
-			anon_vma_chain_free(avc);
+	anon_vma = find_mergeable_anon_vma(vma);
+	allocated = NULL;
+	if (!anon_vma) {
+		anon_vma = anon_vma_alloc();
+		if (unlikely(!anon_vma))
+			goto out_enomem_free_avc;
+		allocated = anon_vma;
 	}
+
+	anon_vma_lock_write(anon_vma);
+	/* page_table_lock to protect against threads */
+	spin_lock(&mm->page_table_lock);
+	if (likely(!vma->anon_vma)) {
+		vma->anon_vma = anon_vma;
+		anon_vma_chain_link(vma, avc, anon_vma);
+		/* vma reference or self-parent link for new root */
+		anon_vma->degree++;
+		allocated = NULL;
+		avc = NULL;
+	}
+	spin_unlock(&mm->page_table_lock);
+	anon_vma_unlock_write(anon_vma);
+
+	if (unlikely(allocated))
+		put_anon_vma(allocated);
+	if (unlikely(avc))
+		anon_vma_chain_free(avc);
+
 	return 0;
 
  out_enomem_free_avc:
@@ -1213,8 +1212,8 @@ void do_page_add_anon_rmap(struct page *page,
 		 * disabled.
 		 */
 		if (compound)
-			__inc_zone_page_state(page, NR_ANON_THPS);
-		__mod_zone_page_state(page_zone(page), NR_ANON_PAGES, nr);
+			__inc_node_page_state(page, NR_ANON_THPS);
+		__mod_node_page_state(page_pgdat(page), NR_ANON_MAPPED, nr);
 	}
 	if (unlikely(PageKsm(page)))
 		return;
@@ -1251,14 +1250,14 @@ void page_add_new_anon_rmap(struct page *page,
 		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
 		/* increment count (starts at -1) */
 		atomic_set(compound_mapcount_ptr(page), 0);
-		__inc_zone_page_state(page, NR_ANON_THPS);
+		__inc_node_page_state(page, NR_ANON_THPS);
 	} else {
 		/* Anon THP always mapped first with PMD */
 		VM_BUG_ON_PAGE(PageTransCompound(page), page);
 		/* increment count (starts at -1) */
 		atomic_set(&page->_mapcount, 0);
 	}
-	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES, nr);
+	__mod_node_page_state(page_pgdat(page), NR_ANON_MAPPED, nr);
 	__page_set_anon_rmap(page, vma, address, 1);
 }
 
@@ -1282,10 +1281,11 @@ void page_add_file_rmap(struct page *page, bool compound)
 		if (!atomic_inc_and_test(compound_mapcount_ptr(page)))
 			goto out;
 		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
-		__inc_zone_page_state(page, NR_SHMEM_PMDMAPPED);
+		__inc_node_page_state(page, NR_SHMEM_PMDMAPPED);
 	} else {
-		if (PageTransCompound(page)) {
-			VM_BUG_ON_PAGE(!PageLocked(page), page);
+		if (PageTransCompound(page) && page_mapping(page)) {
+			VM_WARN_ON_ONCE(!PageLocked(page));
+
 			SetPageDoubleMap(compound_head(page));
 			if (PageMlocked(page))
 				clear_page_mlock(compound_head(page));
@@ -1293,7 +1293,7 @@ void page_add_file_rmap(struct page *page, bool compound)
 		if (!atomic_inc_and_test(&page->_mapcount))
 			goto out;
 	}
-	__mod_zone_page_state(page_zone(page), NR_FILE_MAPPED, nr);
+	__mod_node_page_state(page_pgdat(page), NR_FILE_MAPPED, nr);
 	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_MAPPED);
 out:
 	unlock_page_memcg(page);
@@ -1303,7 +1303,7 @@ static void page_remove_file_rmap(struct page *page, bool compound)
 {
 	int i, nr = 1;
 
-	VM_BUG_ON_PAGE(compound && !PageTransHuge(page), page);
+	VM_BUG_ON_PAGE(compound && !PageHead(page), page);
 	lock_page_memcg(page);
 
 	/* Hugepages are not counted in NR_FILE_MAPPED for now. */
@@ -1322,18 +1322,18 @@ static void page_remove_file_rmap(struct page *page, bool compound)
 		if (!atomic_add_negative(-1, compound_mapcount_ptr(page)))
 			goto out;
 		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
-		__dec_zone_page_state(page, NR_SHMEM_PMDMAPPED);
+		__dec_node_page_state(page, NR_SHMEM_PMDMAPPED);
 	} else {
 		if (!atomic_add_negative(-1, &page->_mapcount))
 			goto out;
 	}
 
 	/*
-	 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
+	 * We use the irq-unsafe __{inc|mod}_zone_page_state because
 	 * these counters are not modified in interrupt context, and
 	 * pte lock(a spinlock) is held, which implies preemption disabled.
 	 */
-	__mod_zone_page_state(page_zone(page), NR_FILE_MAPPED, -nr);
+	__mod_node_page_state(page_pgdat(page), NR_FILE_MAPPED, -nr);
 	mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_MAPPED);
 
 	if (unlikely(PageMlocked(page)))
@@ -1356,7 +1356,7 @@ static void page_remove_anon_compound_rmap(struct page *page)
 	if (!IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE))
 		return;
 
-	__dec_zone_page_state(page, NR_ANON_THPS);
+	__dec_node_page_state(page, NR_ANON_THPS);
 
 	if (TestClearPageDoubleMap(page)) {
 		/*
@@ -1375,7 +1375,7 @@ static void page_remove_anon_compound_rmap(struct page *page)
 		clear_page_mlock(page);
 
 	if (nr) {
-		__mod_zone_page_state(page_zone(page), NR_ANON_PAGES, -nr);
+		__mod_node_page_state(page_pgdat(page), NR_ANON_MAPPED, -nr);
 		deferred_split_huge_page(page);
 	}
 }
@@ -1404,7 +1404,7 @@ void page_remove_rmap(struct page *page, bool compound)
 	 * these counters are not modified in interrupt context, and
 	 * pte lock(a spinlock) is held, which implies preemption disabled.
 	 */
-	__dec_zone_page_state(page, NR_ANON_PAGES);
+	__dec_node_page_state(page, NR_ANON_MAPPED);
 
 	if (unlikely(PageMlocked(page)))
 		clear_page_mlock(page);
