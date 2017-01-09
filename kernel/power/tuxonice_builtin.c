@@ -259,6 +259,7 @@ int toi_lowlevel_builtin(void)
 
         save_processor_state();
         error = swsusp_arch_suspend();
+        restore_processor_state();
         if (error)
                 printk(KERN_ERR "Error %d hibernating\n", error);
 
@@ -268,7 +269,6 @@ int toi_lowlevel_builtin(void)
                 set_toi_state(TOI_NOW_RESUMING);
         }
 
-        restore_processor_state();
         return error;
 }
 
