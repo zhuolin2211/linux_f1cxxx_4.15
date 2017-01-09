@@ -396,7 +396,8 @@ int toi_go_atomic(pm_message_t state, int suspend_time)
                 return 1;
         }
 
-        if (disable_nonboot_cpus()) {
+        if ((suspend_time && disable_nonboot_cpus()) ||
+            (!suspend_time && hibernate_resume_nonboot_cpu_disable())) {
             set_abort_result(TOI_CPU_HOTPLUG_FAILED);
             toi_end_atomic(ATOMIC_STEP_CPU_HOTPLUG,
                     suspend_time, 1);
