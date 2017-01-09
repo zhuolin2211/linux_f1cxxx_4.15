@@ -539,6 +539,8 @@ static void use_read_page(unsigned long write_pfn, struct page *buffer)
         if (!was_present)
                 kernel_map_pages(copy_page, 1, 1);
         memcpy(virt, buffer_virt, PAGE_SIZE);
+        flush_icache_range((unsigned long) virt,
+            (unsigned long) virt + PAGE_SIZE);
         if (!was_present)
                 kernel_map_pages(copy_page, 1, 0);
         kunmap(copy_page);
