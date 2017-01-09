@@ -16,6 +16,7 @@
 #include <linux/cpu.h>
 #include <linux/ctype.h>
 #include <linux/kthread.h>
+#include <trace/events/power.h>
 #include "tuxonice_io.h"
 #include "tuxonice.h"
 #include "tuxonice_extent.h"
@@ -258,15 +259,18 @@ int toi_lowlevel_builtin(void)
         int error = 0;
 
         save_processor_state();
+        trace_suspend_resume(TPS("machine_suspend"), PM_EVENT_HIBERNATE, true);
         error = swsusp_arch_suspend();
         restore_processor_state();
-        if (error)
-                printk(KERN_ERR "Error %d hibernating\n", error);
+        trace_suspend_resume(TPS("machine_suspend"), PM_EVENT_HIBERNATE, false);
 
         /* Restore control flow appears here */
         if (!toi_in_hibernate) {
                 copyback_high();
                 set_toi_state(TOI_NOW_RESUMING);
+        } else {
+          if (error)
+            printk(KERN_ERR "Error %d hibernating\n", error);
         }
 
         return error;
