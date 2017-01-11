@@ -339,6 +339,7 @@ Failed:
 int toi_go_atomic(pm_message_t state, int suspend_time)
 {
   if (suspend_time) {
+    pm_suspend_clear_flags();
     if (platform_begin(1)) {
       set_abort_result(TOI_PLATFORM_PREP_FAILED);
       toi_end_atomic(ATOMIC_STEP_PLATFORM_END, suspend_time, 3);
