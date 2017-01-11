@@ -20,7 +20,7 @@ int toi_register_storage_chain(struct toi_bdev_info *new);
 int toi_serialise_extent_chains(void);
 int toi_load_extent_chains(void);
 int toi_bio_rw_page(int writing, struct page *page, int is_readahead,
-                int free_group);
+    int free_group);
 int toi_bio_restore_original_signature(void);
 int toi_bio_devinfo_storage_needed(void);
 unsigned long get_headerblock(void);
@@ -35,18 +35,18 @@ void toi_bio_free_unused_storage(void);
 #define sig_size (sizeof(HaveImage))
 
 struct sig_data {
-        char sig[sig_size];
-        int have_image;
-        int resumed_before;
+  char sig[sig_size];
+  int have_image;
+  int resumed_before;
 
-        char have_uuid;
-        char header_uuid[17];
-        dev_t header_dev_t;
-        unsigned long first_header_block;
+  char have_uuid;
+  char header_uuid[17];
+  dev_t header_dev_t;
+  unsigned long first_header_block;
 
-        /* Repeat the signature to be sure we have a header version */
-        char sig2[sig_size];
-        int header_version;
+  /* Repeat the signature to be sure we have a header version */
+  char sig2[sig_size];
+  int header_version;
 };
 
 void forget_signature_page(void);
@@ -67,12 +67,12 @@ struct block_device *open_bdev(dev_t device, int display_errs);
 extern int current_stream;
 extern int more_readahead;
 int toi_do_io(int writing, struct block_device *bdev, long block0,
-        struct page *page, int is_readahead, int syncio, int free_group);
+    struct page *page, int is_readahead, int syncio, int free_group);
 int get_main_pool_phys_params(void);
 
 void toi_close_bdev(struct block_device *bdev);
 struct block_device *toi_open_bdev(char *uuid, dev_t default_device,
-                int display_errs);
+    int display_errs);
 
 extern struct toi_module_ops toi_blockwriter_ops;
 void dump_block_chains(void);
@@ -87,14 +87,14 @@ void close_resume_dev_t(int force);
 int open_resume_dev_t(int force, int quiet);
 
 struct toi_incremental_image_pointer_saved_data {
-    unsigned long block;
-    int chain;
+  unsigned long block;
+  int chain;
 };
 
 struct toi_incremental_image_pointer {
-    struct toi_incremental_image_pointer_saved_data save;
-    struct block_device *bdev;
-    unsigned long block;
+  struct toi_incremental_image_pointer_saved_data save;
+  struct block_device *bdev;
+  unsigned long block;
 };
 
 void toi_bio_store_inc_image_ptr(struct toi_incremental_image_pointer *ptr);

@@ -60,51 +60,51 @@ extern noinline void kgdb_breakpoint(void);
  */
 static void note_page(void *addr)
 {
-    static struct page *lastpage;
-    struct page *page;
+  static struct page *lastpage;
+  struct page *page;
 
-    page = virt_to_page(addr);
+  page = virt_to_page(addr);
 
-    if (page != lastpage) {
-        unsigned int level;
-        pte_t *pte = lookup_address((unsigned long) addr, &level);
-        struct page *pt_page2 = pte_page(*pte);
-        //debug("Note page %p (=> %p => %p|%ld).\n", addr, pte, pt_page2, page_to_pfn(pt_page2));
-        SetPageTOI_Untracked(pt_page2);
-        lastpage = page;
-    }
+  if (page != lastpage) {
+    unsigned int level;
+    pte_t *pte = lookup_address((unsigned long) addr, &level);
+    struct page *pt_page2 = pte_page(*pte);
+    //debug("Note page %p (=> %p => %p|%ld).\n", addr, pte, pt_page2, page_to_pfn(pt_page2));
+    SetPageTOI_Untracked(pt_page2);
+    lastpage = page;
+  }
 }
 
 static void walk_pte_level(pmd_t addr)
 {
-        int i;
-        pte_t *start;
+  int i;
+  pte_t *start;
 
-        start = (pte_t *) pmd_page_vaddr(addr);
-        for (i = 0; i < PTRS_PER_PTE; i++) {
-                note_page(start);
-                start++;
-        }
+  start = (pte_t *) pmd_page_vaddr(addr);
+  for (i = 0; i < PTRS_PER_PTE; i++) {
+    note_page(start);
+    start++;
+  }
 }
 
 #if PTRS_PER_PMD > 1
 
 static void walk_pmd_level(pud_t addr)
 {
-        int i;
-        pmd_t *start;
+  int i;
+  pmd_t *start;
 
-        start = (pmd_t *) pud_page_vaddr(addr);
-        for (i = 0; i < PTRS_PER_PMD; i++) {
-                if (!pmd_none(*start)) {
-                        if (pmd_large(*start) || !pmd_present(*start))
-                                note_page(start);
-                        else
-                                walk_pte_level(*start);
-                } else
-                        note_page(start);
-                start++;
-        }
+  start = (pmd_t *) pud_page_vaddr(addr);
+  for (i = 0; i < PTRS_PER_PMD; i++) {
+    if (!pmd_none(*start)) {
+      if (pmd_large(*start) || !pmd_present(*start))
+        note_page(start);
+      else
+        walk_pte_level(*start);
+    } else
+      note_page(start);
+    start++;
+  }
 }
 
 #else
@@ -117,22 +117,22 @@ static void walk_pmd_level(pud_t addr)
 
 static void walk_pud_level(pgd_t addr)
 {
-        int i;
-        pud_t *start;
+  int i;
+  pud_t *start;
 
-        start = (pud_t *) pgd_page_vaddr(addr);
+  start = (pud_t *) pgd_page_vaddr(addr);
 
-        for (i = 0; i < PTRS_PER_PUD; i++) {
-                if (!pud_none(*start)) {
-                        if (pud_large(*start) || !pud_present(*start))
-                                note_page(start);
-                        else
-                                walk_pmd_level(*start);
-                } else
-                        note_page(start);
+  for (i = 0; i < PTRS_PER_PUD; i++) {
+    if (!pud_none(*start)) {
+      if (pud_large(*start) || !pud_present(*start))
+        note_page(start);
+      else
+        walk_pmd_level(*start);
+    } else
+      note_page(start);
 
-                start++;
-        }
+    start++;
+  }
 }
 
 #else
@@ -147,43 +147,43 @@ static void walk_pud_level(pgd_t addr)
 static void toi_ptdump_walk_pgd_level(pgd_t *pgd)
 {
 #ifdef CONFIG_X86_64
-        pgd_t *start = (pgd_t *) &init_level4_pgt;
+  pgd_t *start = (pgd_t *) &init_level4_pgt;
 #else
-        pgd_t *start = swapper_pg_dir;
+  pgd_t *start = swapper_pg_dir;
 #endif
-        int i;
-        if (pgd) {
-                start = pgd;
-        }
+  int i;
+  if (pgd) {
+    start = pgd;
+  }
 
-        for (i = 0; i < PTRS_PER_PGD; i++) {
-                if (!pgd_none(*start)) {
-                        if (pgd_large(*start) || !pgd_present(*start))
-                                note_page(start);
-                        else
-                                walk_pud_level(*start);
-                } else
-                        note_page(start);
-
-                start++;
-        }
-
-        /* Flush out the last page */
+  for (i = 0; i < PTRS_PER_PGD; i++) {
+    if (!pgd_none(*start)) {
+      if (pgd_large(*start) || !pgd_present(*start))
         note_page(start);
+      else
+        walk_pud_level(*start);
+    } else
+      note_page(start);
+
+    start++;
+  }
+
+  /* Flush out the last page */
+  note_page(start);
 }
 
 #ifdef CONFIG_PARAVIRT
 extern struct pv_info pv_info;
 
 static void toi_set_paravirt_ops_untracked(void) {
-    int i;
+  int i;
 
-    unsigned long pvpfn = page_to_pfn(virt_to_page(__parainstructions)),
-                  pvpfn_end = page_to_pfn(virt_to_page(__parainstructions_end));
-    //debug(KERN_EMERG ".parainstructions goes from pfn %ld to %ld.\n", pvpfn, pvpfn_end);
-    for (i = pvpfn; i <= pvpfn_end; i++) {
-        SetPageTOI_Untracked(pfn_to_page(i));
-    }
+  unsigned long pvpfn = page_to_pfn(virt_to_page(__parainstructions)),
+                pvpfn_end = page_to_pfn(virt_to_page(__parainstructions_end));
+  //debug(KERN_EMERG ".parainstructions goes from pfn %ld to %ld.\n", pvpfn, pvpfn_end);
+  for (i = pvpfn; i <= pvpfn_end; i++) {
+    SetPageTOI_Untracked(pfn_to_page(i));
+  }
 }
 #else
 #define toi_set_paravirt_ops_untracked() { do { } while(0) }
@@ -193,77 +193,77 @@ extern void toi_mark_per_cpus_pages_untracked(void);
 
 void toi_untrack_stack(unsigned long *stack)
 {
-    int i;
-    struct page *stack_page = virt_to_page(stack);
+  int i;
+  struct page *stack_page = virt_to_page(stack);
 
-    for (i = 0; i < (1 << THREAD_SIZE_ORDER); i++) {
-        pr_debug("Untrack stack page %p.\n", page_address(stack_page + i));
-        SetPageTOI_Untracked(stack_page + i);
-    }
+  for (i = 0; i < (1 << THREAD_SIZE_ORDER); i++) {
+    pr_debug("Untrack stack page %p.\n", page_address(stack_page + i));
+    SetPageTOI_Untracked(stack_page + i);
+  }
 }
 void toi_untrack_process(struct task_struct *p)
 {
-    SetPageTOI_Untracked(virt_to_page(p));
-    pr_debug("Untrack process %d page %p.\n", p->pid, page_address(virt_to_page(p)));
+  SetPageTOI_Untracked(virt_to_page(p));
+  pr_debug("Untrack process %d page %p.\n", p->pid, page_address(virt_to_page(p)));
 
-    toi_untrack_stack(p->stack);
+  toi_untrack_stack(p->stack);
 }
 
 void toi_generate_untracked_map(void)
 {
-    struct task_struct *p, *t;
-    struct page *page;
-    pte_t *pte;
-    int i;
-    unsigned int level;
-    static int been_here = 0;
+  struct task_struct *p, *t;
+  struct page *page;
+  pte_t *pte;
+  int i;
+  unsigned int level;
+  static int been_here = 0;
 
-    if (been_here)
-        return;
+  if (been_here)
+    return;
 
-    been_here = 1;
+  been_here = 1;
 
-    /* Pagetable pages */
-    toi_ptdump_walk_pgd_level(NULL);
+  /* Pagetable pages */
+  toi_ptdump_walk_pgd_level(NULL);
 
-    /* Printk buffer - not normally needed but can be helpful for debugging. */
-    //toi_set_logbuf_untracked();
+  /* Printk buffer - not normally needed but can be helpful for debugging. */
+  //toi_set_logbuf_untracked();
 
-    /* Paravirt ops */
-    toi_set_paravirt_ops_untracked();
+  /* Paravirt ops */
+  toi_set_paravirt_ops_untracked();
 
-    /* Task structs and stacks */
-    for_each_process_thread(p, t) {
-        toi_untrack_process(p);
-        //toi_untrack_stack((unsigned long *) t->thread.sp);
+  /* Task structs and stacks */
+  for_each_process_thread(p, t) {
+    toi_untrack_process(p);
+    //toi_untrack_stack((unsigned long *) t->thread.sp);
+  }
+
+  for (i = 0; i < NR_CPUS; i++) {
+    struct task_struct *idle = idle_task(i);
+
+    if (idle) {
+      pr_debug("Untrack idle process for CPU %d.\n", i);
+      toi_untrack_process(idle);
     }
 
-    for (i = 0; i < NR_CPUS; i++) {
-        struct task_struct *idle = idle_task(i);
+    /* IRQ stack */
+    pr_debug("Untrack IRQ stack for CPU %d.\n", i);
+    toi_untrack_stack((unsigned long *)per_cpu(irq_stack_ptr, i));
+  }
 
-        if (idle) {
-            pr_debug("Untrack idle process for CPU %d.\n", i);
-            toi_untrack_process(idle);
-        }
+  /* Per CPU data */
+  //pr_debug("Untracking per CPU variable pages.\n");
+  toi_mark_per_cpus_pages_untracked();
 
-        /* IRQ stack */
-        pr_debug("Untrack IRQ stack for CPU %d.\n", i);
-        toi_untrack_stack((unsigned long *)per_cpu(irq_stack_ptr, i));
-    }
+  /* Init stack - for bringing up secondary CPUs */
+  page = virt_to_page(init_stack);
+  for (i = 0; i < DIV_ROUND_UP(sizeof(init_stack), PAGE_SIZE); i++) {
+    SetPageTOI_Untracked(page + i);
+  }
 
-    /* Per CPU data */
-    //pr_debug("Untracking per CPU variable pages.\n");
-    toi_mark_per_cpus_pages_untracked();
-
-    /* Init stack - for bringing up secondary CPUs */
-    page = virt_to_page(init_stack);
-    for (i = 0; i < DIV_ROUND_UP(sizeof(init_stack), PAGE_SIZE); i++) {
-        SetPageTOI_Untracked(page + i);
-    }
-
-    pte = lookup_address((unsigned long) &mmu_cr4_features, &level);
-    SetPageTOI_Untracked(pte_page(*pte));
-    SetPageTOI_Untracked(virt_to_page(trampoline_cr4_features));
+  pte = lookup_address((unsigned long) &mmu_cr4_features, &level);
+  SetPageTOI_Untracked(pte_page(*pte));
+  SetPageTOI_Untracked(virt_to_page(trampoline_cr4_features));
 }
 
 /**
@@ -272,24 +272,24 @@ void toi_generate_untracked_map(void)
 
 void toi_reset_dirtiness_one(unsigned long pfn, int verbose)
 {
-    struct page *page = pfn_to_page(pfn);
+  struct page *page = pfn_to_page(pfn);
 
-    /**
-     * Don't worry about whether the Dirty flag is
-     * already set. If this is our first call, it
-     * won't be.
-     */
+  /**
+   * Don't worry about whether the Dirty flag is
+   * already set. If this is our first call, it
+   * won't be.
+   */
 
-    preempt_disable();
+  preempt_disable();
 
-    ClearPageTOI_Dirty(page);
-    SetPageTOI_RO(page);
-    if (verbose)
-        printk(KERN_EMERG "Making page %ld (%p|%p) read only.\n", pfn, page, page_address(page));
+  ClearPageTOI_Dirty(page);
+  SetPageTOI_RO(page);
+  if (verbose)
+    printk(KERN_EMERG "Making page %ld (%p|%p) read only.\n", pfn, page, page_address(page));
 
-    set_memory_ro((unsigned long) page_address(page), 1);
+  set_memory_ro((unsigned long) page_address(page), 1);
 
-    preempt_enable();
+  preempt_enable();
 }
 
 /**
@@ -312,78 +312,78 @@ void toi_reset_dirtiness_one(unsigned long pfn, int verbose)
 
 int toi_reset_dirtiness(int verbose)
 {
-        struct zone *zone;
-        unsigned long loop;
-        int allocated_map = 0;
+  struct zone *zone;
+  unsigned long loop;
+  int allocated_map = 0;
 
-        toi_generate_untracked_map();
+  toi_generate_untracked_map();
 
-        if (!free_map) {
-            if (!toi_alloc_bitmap(&free_map))
-                return -ENOMEM;
-            allocated_map = 1;
-        }
+  if (!free_map) {
+    if (!toi_alloc_bitmap(&free_map))
+      return -ENOMEM;
+    allocated_map = 1;
+  }
 
-        toi_generate_free_page_map();
+  toi_generate_free_page_map();
 
-        pr_debug(KERN_EMERG "Reset dirtiness.\n");
-        for_each_populated_zone(zone) {
-            // 64 bit only. No need to worry about highmem.
-            for (loop = 0; loop < zone->spanned_pages; loop++) {
-                unsigned long pfn = zone->zone_start_pfn + loop;
-                struct page *page;
-                int chunk_size;
+  pr_debug(KERN_EMERG "Reset dirtiness.\n");
+  for_each_populated_zone(zone) {
+    // 64 bit only. No need to worry about highmem.
+    for (loop = 0; loop < zone->spanned_pages; loop++) {
+      unsigned long pfn = zone->zone_start_pfn + loop;
+      struct page *page;
+      int chunk_size;
 
-                if (!pfn_valid(pfn)) {
-                    continue;
-                }
+      if (!pfn_valid(pfn)) {
+        continue;
+      }
 
-                chunk_size = toi_size_of_free_region(zone, pfn);
-                if (chunk_size) {
-                    loop += chunk_size - 1;
-                    continue;
-                }
+      chunk_size = toi_size_of_free_region(zone, pfn);
+      if (chunk_size) {
+        loop += chunk_size - 1;
+        continue;
+      }
 
-                page = pfn_to_page(pfn);
+      page = pfn_to_page(pfn);
 
-                if (PageNosave(page) || !saveable_page(zone, pfn)) {
-                    continue;
-                }
+      if (PageNosave(page) || !saveable_page(zone, pfn)) {
+        continue;
+      }
 
-                if (PageTOI_Untracked(page)) {
-                    continue;
-                }
+      if (PageTOI_Untracked(page)) {
+        continue;
+      }
 
-                /**
-                 * Do we need to (re)protect the page?
-                 * If it is already protected (PageTOI_RO), there is
-                 * nothing to do - skip the following.
-                 * If it is marked as dirty (PageTOI_Dirty), it was
-                 * either free and has been allocated or has been
-                 * written to and marked dirty. Reset the dirty flag
-                 * and (re)apply the protection.
-                 */
-                if (!PageTOI_RO(page)) {
-                    toi_reset_dirtiness_one(pfn, verbose);
-                }
-            }
-        }
+      /**
+       * Do we need to (re)protect the page?
+       * If it is already protected (PageTOI_RO), there is
+       * nothing to do - skip the following.
+       * If it is marked as dirty (PageTOI_Dirty), it was
+       * either free and has been allocated or has been
+       * written to and marked dirty. Reset the dirty flag
+       * and (re)apply the protection.
+       */
+      if (!PageTOI_RO(page)) {
+        toi_reset_dirtiness_one(pfn, verbose);
+      }
+    }
+  }
 
-        pr_debug(KERN_EMERG "Done resetting dirtiness.\n");
+  pr_debug(KERN_EMERG "Done resetting dirtiness.\n");
 
-        if (allocated_map) {
-            toi_free_bitmap(&free_map);
-        }
-        return 0;
+  if (allocated_map) {
+    toi_free_bitmap(&free_map);
+  }
+  return 0;
 }
 
 static int toi_reset_dirtiness_initcall(void)
 {
-    if (toi_do_incremental_initcall) {
-        pr_info("TuxOnIce: Enabling dirty page tracking.\n");
-        toi_reset_dirtiness(0);
-    }
-    return 1;
+  if (toi_do_incremental_initcall) {
+    pr_info("TuxOnIce: Enabling dirty page tracking.\n");
+    toi_reset_dirtiness(0);
+  }
+  return 1;
 }
 extern void toi_generate_untracked_map(void);
 
@@ -392,11 +392,11 @@ early_initcall(toi_reset_dirtiness_initcall);
 
 static int __init toi_incremental_initcall_setup(char *str)
 {
-        int value;
+  int value;
 
-        if (sscanf(str, "=%d", &value) && value)
-                toi_do_incremental_initcall = value;
+  if (sscanf(str, "=%d", &value) && value)
+    toi_do_incremental_initcall = value;
 
-        return 1;
+  return 1;
 }
 __setup("toi_incremental_initcall", toi_incremental_initcall_setup);

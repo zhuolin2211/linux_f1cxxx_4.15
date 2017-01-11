@@ -24,121 +24,121 @@ DEFINE_PER_CPU(struct toi_cbw_state, toi_cbw_states);
 
 static void _toi_free_cbw_data(struct toi_cbw_state *state)
 {
-    struct toi_cbw *page_ptr, *ptr, *next;
+  struct toi_cbw *page_ptr, *ptr, *next;
 
-    page_ptr = ptr = state->first;
+  page_ptr = ptr = state->first;
 
-    while(ptr) {
-        next = ptr->next;
+  while(ptr) {
+    next = ptr->next;
 
-        if (ptr->virt) {
-            toi__free_page(40, virt_to_page(ptr->virt));
-        }
-        if ((((unsigned long) ptr) & PAGE_MASK) != (unsigned long) page_ptr) {
-            /* Must be on a new page - free the previous one. */
-            toi__free_page(40, virt_to_page(page_ptr));
-            page_ptr = ptr;
-        }
-        ptr = next;
+    if (ptr->virt) {
+      toi__free_page(40, virt_to_page(ptr->virt));
     }
-
-    if (page_ptr) {
-        toi__free_page(40, virt_to_page(page_ptr));
+    if ((((unsigned long) ptr) & PAGE_MASK) != (unsigned long) page_ptr) {
+      /* Must be on a new page - free the previous one. */
+      toi__free_page(40, virt_to_page(page_ptr));
+      page_ptr = ptr;
     }
+    ptr = next;
+  }
 
-    state->first = state->next = state->last = NULL;
-    state->size = 0;
+  if (page_ptr) {
+    toi__free_page(40, virt_to_page(page_ptr));
+  }
+
+  state->first = state->next = state->last = NULL;
+  state->size = 0;
 }
 
 void toi_free_cbw_data(void)
 {
-    int i;
+  int i;
 
-    for_each_online_cpu(i) {
-        struct toi_cbw_state *state = &per_cpu(toi_cbw_states, i);
+  for_each_online_cpu(i) {
+    struct toi_cbw_state *state = &per_cpu(toi_cbw_states, i);
 
-        if (!state->first)
-            continue;
+    if (!state->first)
+      continue;
 
-        state->enabled = 0;
+    state->enabled = 0;
 
-        while (state->active) {
-            schedule();
-        }
-
-        _toi_free_cbw_data(state);
+    while (state->active) {
+      schedule();
     }
+
+    _toi_free_cbw_data(state);
+  }
 }
 
 static int _toi_allocate_cbw_data(struct toi_cbw_state *state)
 {
-    while(state->size < toi_cbw_pool_size) {
-        int i;
-        struct toi_cbw *ptr;
+  while(state->size < toi_cbw_pool_size) {
+    int i;
+    struct toi_cbw *ptr;
 
-        ptr = (struct toi_cbw *) toi_get_zeroed_page(40, GFP_KERNEL);
+    ptr = (struct toi_cbw *) toi_get_zeroed_page(40, GFP_KERNEL);
 
-        if (!ptr) {
-            return -ENOMEM;
-        }
-
-        if (!state->first) {
-            state->first = state->next = state->last = ptr;
-        }
-
-        for (i = 0; i < CBWS_PER_PAGE; i++) {
-            struct toi_cbw *cbw = &ptr[i];
-
-            cbw->virt = (char *) toi_get_zeroed_page(40, GFP_KERNEL);
-            if (!cbw->virt) {
-                state->size += i;
-                printk("Out of memory allocating CBW pages.\n");
-                return -ENOMEM;
-            }
-
-            if (cbw == state->first)
-                continue;
-
-            state->last->next = cbw;
-            state->last = cbw;
-        }
-
-        state->size += CBWS_PER_PAGE;
+    if (!ptr) {
+      return -ENOMEM;
     }
 
-    state->enabled = 1;
+    if (!state->first) {
+      state->first = state->next = state->last = ptr;
+    }
 
-    return 0;
+    for (i = 0; i < CBWS_PER_PAGE; i++) {
+      struct toi_cbw *cbw = &ptr[i];
+
+      cbw->virt = (char *) toi_get_zeroed_page(40, GFP_KERNEL);
+      if (!cbw->virt) {
+        state->size += i;
+        printk("Out of memory allocating CBW pages.\n");
+        return -ENOMEM;
+      }
+
+      if (cbw == state->first)
+        continue;
+
+      state->last->next = cbw;
+      state->last = cbw;
+    }
+
+    state->size += CBWS_PER_PAGE;
+  }
+
+  state->enabled = 1;
+
+  return 0;
 }
 
 
 int toi_allocate_cbw_data(void)
 {
-    int i, result;
+  int i, result;
 
-    for_each_online_cpu(i) {
-        struct toi_cbw_state *state = &per_cpu(toi_cbw_states, i);
+  for_each_online_cpu(i) {
+    struct toi_cbw_state *state = &per_cpu(toi_cbw_states, i);
 
-        result = _toi_allocate_cbw_data(state);
+    result = _toi_allocate_cbw_data(state);
 
-        if (result)
-            return result;
-    }
+    if (result)
+      return result;
+  }
 
-    return 0;
+  return 0;
 }
 
 void toi_cbw_restore(void)
 {
-    if (!toi_keeping_image)
-        return;
+  if (!toi_keeping_image)
+    return;
 
 }
 
 void toi_cbw_write(void)
 {
-    if (!toi_keeping_image)
-        return;
+  if (!toi_keeping_image)
+    return;
 
 }
 
@@ -151,65 +151,65 @@ void toi_cbw_write(void)
  */
 static int toi_cbw_test_read(const char *buffer, int count)
 {
-    unsigned long virt = toi_get_zeroed_page(40, GFP_KERNEL);
-    char *original = "Original contents";
-    char *modified = "Modified material";
-    struct page *page = virt_to_page(virt);
-    int i, len = 0, found = 0, pfn = page_to_pfn(page);
+  unsigned long virt = toi_get_zeroed_page(40, GFP_KERNEL);
+  char *original = "Original contents";
+  char *modified = "Modified material";
+  struct page *page = virt_to_page(virt);
+  int i, len = 0, found = 0, pfn = page_to_pfn(page);
 
-    if (!page) {
-        printk("toi_cbw_test_read: Unable to allocate a page for testing.\n");
-        return -ENOMEM;
-    }
+  if (!page) {
+    printk("toi_cbw_test_read: Unable to allocate a page for testing.\n");
+    return -ENOMEM;
+  }
 
-    memcpy((char *) virt, original, strlen(original));
+  memcpy((char *) virt, original, strlen(original));
 
-    if (toi_allocate_cbw_data()) {
-        printk("toi_cbw_test_read: Unable to allocate cbw data.\n");
-        return -ENOMEM;
-    }
+  if (toi_allocate_cbw_data()) {
+    printk("toi_cbw_test_read: Unable to allocate cbw data.\n");
+    return -ENOMEM;
+  }
 
-    toi_reset_dirtiness_one(pfn, 0);
+  toi_reset_dirtiness_one(pfn, 0);
 
-    SetPageTOI_CBW(page);
+  SetPageTOI_CBW(page);
 
-    memcpy((char *) virt, modified, strlen(modified));
+  memcpy((char *) virt, modified, strlen(modified));
 
-    if (strncmp((char *) virt, modified, strlen(modified))) {
-        len += sprintf((char *) buffer + len, "Failed to write to page after protecting it.\n");
-    }
+  if (strncmp((char *) virt, modified, strlen(modified))) {
+    len += sprintf((char *) buffer + len, "Failed to write to page after protecting it.\n");
+  }
 
-    for_each_online_cpu(i) {
-        struct toi_cbw_state *state = &per_cpu(toi_cbw_states, i);
-        struct toi_cbw *ptr = state->first, *last_ptr = ptr;
+  for_each_online_cpu(i) {
+    struct toi_cbw_state *state = &per_cpu(toi_cbw_states, i);
+    struct toi_cbw *ptr = state->first, *last_ptr = ptr;
 
-        if (!found) {
-            while (ptr) {
-                if (ptr->pfn == pfn) {
-                    found = 1;
-                    if (strncmp(ptr->virt, original, strlen(original))) {
-                        len += sprintf((char *) buffer + len, "Contents of original buffer are not original.\n");
-                    } else {
-                        len += sprintf((char *) buffer + len, "Test passed. Buffer changed and original contents preserved.\n");
-                    }
-                    break;
-                }
-
-                last_ptr = ptr;
-                ptr = ptr->next;
-            }
+    if (!found) {
+      while (ptr) {
+        if (ptr->pfn == pfn) {
+          found = 1;
+          if (strncmp(ptr->virt, original, strlen(original))) {
+            len += sprintf((char *) buffer + len, "Contents of original buffer are not original.\n");
+          } else {
+            len += sprintf((char *) buffer + len, "Test passed. Buffer changed and original contents preserved.\n");
+          }
+          break;
         }
 
-        if (!last_ptr)
-            len += sprintf((char *) buffer + len, "All available CBW buffers on cpu %d used.\n", i);
+        last_ptr = ptr;
+        ptr = ptr->next;
+      }
     }
 
-    if (!found)
-        len += sprintf((char *) buffer + len, "Copy before write buffer not found.\n");
+    if (!last_ptr)
+      len += sprintf((char *) buffer + len, "All available CBW buffers on cpu %d used.\n", i);
+  }
 
-    toi_free_cbw_data();
+  if (!found)
+    len += sprintf((char *) buffer + len, "Copy before write buffer not found.\n");
 
-    return len;
+  toi_free_cbw_data();
+
+  return len;
 }
 
 /*
@@ -217,24 +217,24 @@ static int toi_cbw_test_read(const char *buffer, int count)
  * boot. Modules and the console code register their own entries separately.
  */
 static struct toi_sysfs_data sysfs_params[] = {
-        SYSFS_CUSTOM("test", SYSFS_RW, toi_cbw_test_read,
-                        NULL, SYSFS_NEEDS_SM_FOR_READ, NULL),
+  SYSFS_CUSTOM("test", SYSFS_RW, toi_cbw_test_read,
+      NULL, SYSFS_NEEDS_SM_FOR_READ, NULL),
 };
 
 static struct toi_module_ops toi_cbw_ops = {
-        .type                                        = MISC_HIDDEN_MODULE,
-        .name                                        = "copy_before_write debugging",
-        .directory                                = "cbw",
-        .module                                        = THIS_MODULE,
-        .early                                        = 1,
+  .type                                        = MISC_HIDDEN_MODULE,
+  .name                                        = "copy_before_write debugging",
+  .directory                                = "cbw",
+  .module                                        = THIS_MODULE,
+  .early                                        = 1,
 
-        .sysfs_data                = sysfs_params,
-        .num_sysfs_entries        = sizeof(sysfs_params) /
-                sizeof(struct toi_sysfs_data),
+  .sysfs_data                = sysfs_params,
+  .num_sysfs_entries        = sizeof(sysfs_params) /
+    sizeof(struct toi_sysfs_data),
 };
 
 int toi_cbw_init(void)
 {
-        int result = toi_register_module(&toi_cbw_ops);
-        return result;
+  int result = toi_register_module(&toi_cbw_ops);
+  return result;
 }
