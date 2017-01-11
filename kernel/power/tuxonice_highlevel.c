@@ -98,6 +98,7 @@ struct pagedir pagedir2 = {2};
 static mm_segment_t oldfs;
 static DEFINE_MUTEX(tuxonice_in_use);
 static int block_dump_save;
+static int tuxonice_nr_calls;
 
 int toi_trace_index;
 
@@ -158,6 +159,8 @@ void toi_finish_anything(int hibernate_or_resume)
   if (hibernate_or_resume) {
     block_dump = block_dump_save;
     set_cpus_allowed_ptr(current, cpu_all_mask);
+    __pm_notifier_call_chain(PM_POST_HIBERNATION, tuxonice_nr_calls, NULL);
+    pm_restore_console();
     toi_alloc_print_debug_stats();
     atomic_inc(&snapshot_device_available);
     unlock_system_sleep();
@@ -177,6 +180,7 @@ void toi_finish_anything(int hibernate_or_resume)
  **/
 int toi_start_anything(int hibernate_or_resume)
 {
+  int error;
   mutex_lock(&tuxonice_in_use);
 
   oldfs = get_fs();
@@ -189,6 +193,13 @@ int toi_start_anything(int hibernate_or_resume)
 
     if (!atomic_add_unless(&snapshot_device_available, -1, 0))
       goto snapshotdevice_unavailable;
+
+    pm_prepare_console();
+
+    error = __pm_notifier_call_chain(PM_HIBERNATION_PREPARE, -1, &tuxonice_nr_calls);
+    if (error) {
+      goto notifier_chain_error;
+    }
   }
 
   if (hibernate_or_resume == SYSFS_HIBERNATE)
@@ -196,7 +207,7 @@ int toi_start_anything(int hibernate_or_resume)
 
   if (toi_get_modules()) {
     printk(KERN_INFO "TuxOnIce: Get modules failed!\n");
-    goto prehibernate_err;
+    goto get_modules_error;
   }
 
   if (hibernate_or_resume) {
@@ -223,14 +234,18 @@ early_init_err:
     block_dump_save = block_dump;
     set_cpus_allowed_ptr(current, cpu_all_mask);
   }
+get_modules_error:
   toi_put_modules();
-prehibernate_err:
-  if (hibernate_or_resume)
-    atomic_inc(&snapshot_device_available);
+notifier_chain_error:
+  if (hibernate_or_resume) {
+    __pm_notifier_call_chain(PM_POST_HIBERNATION, tuxonice_nr_calls, NULL);
+    pm_restore_console();
+  }
 snapshotdevice_unavailable:
-  if (hibernate_or_resume)
-    mutex_unlock(&pm_mutex);
-  release_super_lock();
+  if (hibernate_or_resume) {
+    atomic_inc(&snapshot_device_available);
+    unlock_system_sleep();
+  }
   set_fs(oldfs);
   mutex_unlock(&tuxonice_in_use);
   return -EBUSY;
@@ -550,7 +565,7 @@ static void do_cleanup(int get_debug_info, int restarting)
   usermodehelper_enable();
 
   if (test_toi_state(TOI_NOTIFIERS_PREPARE)) {
-    pm_notifier_call_chain(PM_POST_HIBERNATION);
+    __pm_notifier_call_chain(PM_POST_HIBERNATION, tuxonice_nr_calls, NULL);
     clear_toi_state(TOI_NOTIFIERS_PREPARE);
   }
 
@@ -639,7 +654,7 @@ static int toi_init(int restarting)
   if (!restarting)
     toi_prepare_console();
 
-  result = pm_notifier_call_chain(PM_HIBERNATION_PREPARE);
+  result = __pm_notifier_call_chain(PM_HIBERNATION_PREPARE, -1, &tuxonice_nr_calls);
   if (result) {
     set_result_state(TOI_NOTIFIERS_PREPARE_FAILED);
     return 1;
