@@ -418,5 +418,13 @@
 			#size-cells = <0>;
 			#gpio-cells = <3>;
 		};
+
+		r_pwm: pwm@01f03800 {
+			compatible = "allwinner,sun50i-a64-r-pwm";
+			reg = <0x01f03800 0x40>;
+			clocks = <&osc24M>;
+			#pwm-cells = <3>;
+			status = "disabled";
+		};
 	};
 };
