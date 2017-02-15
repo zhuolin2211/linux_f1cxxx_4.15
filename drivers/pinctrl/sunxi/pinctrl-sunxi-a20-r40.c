@@ -18,7 +18,7 @@
 
 #include "pinctrl-sunxi.h"
 
-static const struct sunxi_desc_pin sun7i_a20_pins[] = {
+static const struct sunxi_desc_pin sunxi_a20_r40_pins[] = {
 	SUNXI_PIN(SUNXI_PINCTRL_PIN(A, 0),
 		  SUNXI_FUNCTION(0x0, "gpio_in"),
 		  SUNXI_FUNCTION(0x1, "gpio_out"),
@@ -280,7 +280,10 @@ static const struct sunxi_desc_pin sun7i_a20_pins[] = {
 	SUNXI_PIN(SUNXI_PINCTRL_PIN(C, 5),
 		  SUNXI_FUNCTION(0x0, "gpio_in"),
 		  SUNXI_FUNCTION(0x1, "gpio_out"),
-		  SUNXI_FUNCTION(0x2, "nand0")),	/* NRE# */
+		  SUNXI_FUNCTION(0x2, "nand0"),	/* NRE# */
+		  SUNXI_FUNCTION_VARIANT(0x3,
+					 "mmc2",	/* DS */
+					 PINCTRL_SUN8I_R40)),
 	SUNXI_PIN(SUNXI_PINCTRL_PIN(C, 6),
 		  SUNXI_FUNCTION(0x0, "gpio_in"),
 		  SUNXI_FUNCTION(0x1, "gpio_out"),
@@ -314,19 +317,31 @@ static const struct sunxi_desc_pin sun7i_a20_pins[] = {
 	SUNXI_PIN(SUNXI_PINCTRL_PIN(C, 12),
 		  SUNXI_FUNCTION(0x0, "gpio_in"),
 		  SUNXI_FUNCTION(0x1, "gpio_out"),
-		  SUNXI_FUNCTION(0x2, "nand0")),	/* NDQ4 */
+		  SUNXI_FUNCTION(0x2, "nand0"),		/* NDQ4 */
+		  SUNXI_FUNCTION_VARIANT(0x3,
+					 "mmc2",	/* D4 */
+					 PINCTRL_SUN8I_R40)),
 	SUNXI_PIN(SUNXI_PINCTRL_PIN(C, 13),
 		  SUNXI_FUNCTION(0x0, "gpio_in"),
 		  SUNXI_FUNCTION(0x1, "gpio_out"),
-		  SUNXI_FUNCTION(0x2, "nand0")),	/* NDQ5 */
+		  SUNXI_FUNCTION(0x2, "nand0"),		/* NDQ5 */
+		  SUNXI_FUNCTION_VARIANT(0x3,
+					 "mmc2",	/* D5 */
+					 PINCTRL_SUN8I_R40)),
 	SUNXI_PIN(SUNXI_PINCTRL_PIN(C, 14),
 		  SUNXI_FUNCTION(0x0, "gpio_in"),
 		  SUNXI_FUNCTION(0x1, "gpio_out"),
-		  SUNXI_FUNCTION(0x2, "nand0")),	/* NDQ6 */
+		  SUNXI_FUNCTION(0x2, "nand0"),		/* NDQ6 */
+		  SUNXI_FUNCTION_VARIANT(0x3,
+					 "mmc2",	/* D6 */
+					 PINCTRL_SUN8I_R40)),
 	SUNXI_PIN(SUNXI_PINCTRL_PIN(C, 15),
 		  SUNXI_FUNCTION(0x0, "gpio_in"),
 		  SUNXI_FUNCTION(0x1, "gpio_out"),
-		  SUNXI_FUNCTION(0x2, "nand0")),	/* NDQ7 */
+		  SUNXI_FUNCTION(0x2, "nand0"),		/* NDQ7 */
+		  SUNXI_FUNCTION_VARIANT(0x3,
+					 "mmc2",	/* D7 */
+					 PINCTRL_SUN8I_R40)),
 	SUNXI_PIN(SUNXI_PINCTRL_PIN(C, 16),
 		  SUNXI_FUNCTION(0x0, "gpio_in"),
 		  SUNXI_FUNCTION(0x1, "gpio_out"),
@@ -366,7 +381,10 @@ static const struct sunxi_desc_pin sun7i_a20_pins[] = {
 	SUNXI_PIN(SUNXI_PINCTRL_PIN(C, 24),
 		  SUNXI_FUNCTION(0x0, "gpio_in"),
 		  SUNXI_FUNCTION(0x1, "gpio_out"),
-		  SUNXI_FUNCTION(0x2, "nand0")),	/* NDQS */
+		  SUNXI_FUNCTION(0x2, "nand0"),		/* NDQS */
+		  SUNXI_FUNCTION_VARIANT(0x3,
+					 "mmc2",	/* RST */
+					 PINCTRL_SUN8I_R40)),
 	/* Hole */
 	SUNXI_PIN(SUNXI_PINCTRL_PIN(D, 0),
 		  SUNXI_FUNCTION(0x0, "gpio_in"),
@@ -1029,28 +1047,39 @@ static const struct sunxi_desc_pin sun7i_a20_pins[] = {
 		  SUNXI_FUNCTION(0x4, "hdmi")),		/* HSDA */
 };
 
-static const struct sunxi_pinctrl_desc sun7i_a20_pinctrl_data = {
-	.pins = sun7i_a20_pins,
-	.npins = ARRAY_SIZE(sun7i_a20_pins),
+static const struct sunxi_pinctrl_desc sunxi_a20_r40_pinctrl_data = {
+	.pins = sunxi_a20_r40_pins,
+	.npins = ARRAY_SIZE(sunxi_a20_r40_pins),
 	.irq_banks = 1,
 };
 
-static int sun7i_a20_pinctrl_probe(struct platform_device *pdev)
+static int sunxi_a20_r40_pinctrl_probe(struct platform_device *pdev)
 {
-	return sunxi_pinctrl_init(pdev,
-				  &sun7i_a20_pinctrl_data);
+	unsigned long variant =
+		(unsigned long)of_device_get_match_data(&pdev->dev);
+
+	return sunxi_pinctrl_init_with_variant(pdev,
+					       &sunxi_a20_r40_pinctrl_data,
+					       variant);
 }
 
-static const struct of_device_id sun7i_a20_pinctrl_match[] = {
-	{ .compatible = "allwinner,sun7i-a20-pinctrl", },
+static const struct of_device_id sunxi_a20_r40_pinctrl_match[] = {
+	{
+		.compatible = "allwinner,sun7i-a20-pinctrl",
+		.data = (void *) PINCTRL_SUN7I_A20,
+	},
+	{
+		.compatible = "allwinner,sun8i-r40-pinctrl",
+		.data = (void *) PINCTRL_SUN8I_R40,
+	},
 	{}
 };
 
-static struct platform_driver sun7i_a20_pinctrl_driver = {
-	.probe	= sun7i_a20_pinctrl_probe,
+static struct platform_driver sunxi_a20_r40_pinctrl_driver = {
+	.probe	= sunxi_a20_r40_pinctrl_probe,
 	.driver	= {
-		.name		= "sun7i-a20-pinctrl",
-		.of_match_table	= sun7i_a20_pinctrl_match,
+		.name		= "sunxi-a20-r40-pinctrl",
+		.of_match_table	= sunxi_a20_r40_pinctrl_match,
 	},
 };
-builtin_platform_driver(sun7i_a20_pinctrl_driver);
+builtin_platform_driver(sunxi_a20_r40_pinctrl_driver);

@@ -85,6 +85,8 @@
 #define PINCTRL_SUN5I_A10S	BIT(1)
 #define PINCTRL_SUN5I_A13	BIT(2)
 #define PINCTRL_SUN5I_GR8	BIT(3)
+#define PINCTRL_SUN7I_A20	BIT(4)
+#define PINCTRL_SUN8I_R40	BIT(5)
 
 struct sunxi_desc_function {
 	unsigned long	variant;
