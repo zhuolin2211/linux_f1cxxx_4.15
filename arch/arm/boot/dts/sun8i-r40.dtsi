@@ -115,6 +115,12 @@
 		#size-cells = <1>;
 		ranges;
 
+		syscon: syscon@01c00000 {
+			compatible = "syscon",
+				     "allwinner,sun8i-r40-system-controller";
+			reg = <0x01c00000 0x1000>;
+		};
+
 		nmi_intc: interrupt-controller@01c00030 {
 			compatible = "allwinner,sun7i-a20-sc-nmi";
 			interrupt-controller;
@@ -202,6 +208,15 @@
 			i2c0_pins: twi0@0 {
 				pins = "PB0", "PB1";
 				function = "i2c0";
+			};
+
+			gmac_rgmii_pins: gmac-rgmii@0 {
+				pins = "PA0", "PA1", "PA2", "PA3",
+				       "PA4", "PA5", "PA6", "PA7",
+				       "PA8", "PA9", "PA10", "PA11",
+				       "PA11", "PA12", "PA13", "PA14",
+				       "PA15", "PA16", "PA17";
+				function = "gmac";
 			};
 
 			mmc0_pins: mmc0@0 {
@@ -378,6 +393,26 @@
 			status = "disabled";
 			#address-cells = <1>;
 			#size-cells = <0>;
+		};
+
+		gmac: ethernet@1c30000 {
+			compatible = "allwinner,sun50i-a64-emac";
+			syscon = <&syscon>;
+			reg = <0x01c30000 0x104>;
+			interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "macirq";
+			resets = <&ccu RST_BUS_GMAC>;
+			reset-names = "stmmaceth";
+			clocks = <&ccu CLK_BUS_GMAC>;
+			clock-names = "stmmaceth";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+
+			mdio: mdio {
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
 		};
 
 		gic: interrupt-controller@01c81000 {
