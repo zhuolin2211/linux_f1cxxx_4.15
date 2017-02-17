@@ -51,6 +51,7 @@
 
 	aliases {
 		serial0 = &uart0;
+		ethernet0 = &gmac;
 	};
 
 	chosen {
@@ -61,6 +62,15 @@
 		compatible = "mmc-pwrseq-simple";
 		reset-gpios = <&pio 6 10 GPIO_ACTIVE_LOW>; /* PG10 WIFI_EN */
 	};
+};
+
+&gmac {
+	pinctrl-names = "default";
+	pinctrl-0 = <&gmac_rgmii_pins>;
+	phy-supply = <&reg_dc1sw>;
+	phy-handle = <&ext_rgmii_phy>;
+	phy-mode = "rgmii";
+	status = "okay";
 };
 
 &i2c0 {
@@ -74,13 +84,35 @@
 	};
 };
 
+&mdio {
+	ext_rgmii_phy: ethernet-phy@1 {
+		reg = <0>;
+	};
+};
+
 #include "axp22x.dtsi"
+
+/*
+ * Note: as dwmac-sun8i driver now doesn't support multiple regulators,
+ * this regulator is marked always-on.
+ * This should be fixed after dwmac-sun8i gained multiple regulators support.
+ */
+&reg_aldo2 {
+	regulator-always-on;
+	regulator-min-microvolt = <2500000>;
+	regulator-max-microvolt = <2500000>;
+	regulator-name = "vcc-rgmii";
+};
 
 &reg_aldo3 {
 	regulator-always-on;
 	regulator-min-microvolt = <2700000>;
 	regulator-max-microvolt = <3300000>;
 	regulator-name = "avcc";
+};
+
+&reg_dc1sw {
+	regulator-name = "vcc-gmac-3v3";
 };
 
 &reg_dcdc1 {
