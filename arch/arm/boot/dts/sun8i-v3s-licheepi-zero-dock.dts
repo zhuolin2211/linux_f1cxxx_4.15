@@ -45,3 +45,12 @@
 / {
 	model = "Lichee Pi Zero with Dock";
 };
+
+&codec {
+	allwinner,audio-routing =
+		"Headphone", "HP",
+		"Headphone", "HPCOM",
+		"MIC1", "Mic",
+		"Mic",  "MBIAS";
+	status = "okay";
+};
