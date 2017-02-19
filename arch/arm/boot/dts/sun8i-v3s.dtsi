@@ -40,6 +40,8 @@
  *     OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <dt-bindings/clock/sun8i-v3s-ccu.h>
+#include <dt-bindings/reset/sun8i-v3s-ccu.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 
 / {
