@@ -20,11 +20,16 @@
 #include <drm/drm_fb_helper.h>
 #include <drm/drm_of.h>
 
+#include <linux/of_device.h>
+
 #include "sun4i_crtc.h"
 #include "sun4i_drv.h"
 #include "sun4i_framebuffer.h"
 #include "sun4i_layer.h"
 #include "sun4i_tcon.h"
+
+#define DE_VER_DE	0
+#define DE_VER_DE2	1
 
 static int sun4i_drv_enable_vblank(struct drm_device *drm, unsigned int pipe)
 {
@@ -117,7 +122,9 @@ static int sun4i_drv_bind(struct device *dev)
 {
 	struct drm_device *drm;
 	struct sun4i_drv *drv;
-	int ret;
+	int ret, de_ver;
+
+	de_ver = (int)of_device_get_match_data(dev);
 
 	drm = drm_dev_alloc(&sun4i_drv_driver, dev);
 	if (IS_ERR(drm))
@@ -140,7 +147,10 @@ static int sun4i_drv_bind(struct device *dev)
 	}
 
 	/* Create our layers */
-	drv->layers = sun4i_layers_init(drm);
+	if (de_ver == DE_VER_DE2)
+		drv->layers = sun8i_layers_init(drm);
+	else
+		drv->layers = sun4i_layers_init(drm);
 	if (IS_ERR(drv->layers)) {
 		dev_err(drm->dev, "Couldn't create the planes\n");
 		ret = PTR_ERR(drv->layers);
@@ -323,10 +333,26 @@ static int sun4i_drv_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id sun4i_drv_of_table[] = {
-	{ .compatible = "allwinner,sun5i-a13-display-engine" },
-	{ .compatible = "allwinner,sun6i-a31-display-engine" },
-	{ .compatible = "allwinner,sun6i-a31s-display-engine" },
-	{ .compatible = "allwinner,sun8i-a33-display-engine" },
+	{
+		.compatible = "allwinner,sun5i-a13-display-engine",
+		.data = (void *)DE_VER_DE,
+	},
+	{
+		.compatible = "allwinner,sun6i-a31-display-engine",
+		.data = (void *)DE_VER_DE,
+	},
+	{
+		.compatible = "allwinner,sun6i-a31s-display-engine",
+		.data = (void *)DE_VER_DE,
+	},
+	{
+		.compatible = "allwinner,sun8i-a33-display-engine",
+		.data = (void *)DE_VER_DE,
+	},
+	{
+		.compatible = "allwinner,sun8i-v3s-display-engine",
+		.data = (void *)DE_VER_DE2,
+	},
 	{ }
 };
 MODULE_DEVICE_TABLE(of, sun4i_drv_of_table);
