@@ -25,6 +25,7 @@
 #include <video/videomode.h>
 
 #include "sun4i_backend.h"
+#include "sun8i_mixer.h"
 #include "sun4i_crtc.h"
 #include "sun4i_drv.h"
 #include "sun4i_tcon.h"
@@ -55,7 +56,10 @@ static void sun4i_crtc_atomic_flush(struct drm_crtc *crtc,
 
 	DRM_DEBUG_DRIVER("Committing plane changes\n");
 
-	sun4i_backend_commit(drv->backend);
+	if (drv->backend)
+		sun4i_backend_commit(drv->backend);
+	else if (drv->mixer)
+		sun8i_mixer_commit(drv->mixer);
 
 	if (event) {
 		crtc->state->event = NULL;
