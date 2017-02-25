@@ -310,6 +310,11 @@
 				bias-pull-up;
 			};
 
+			pwm0_pins: pwm0 {
+				pins = "PD22";
+				function = "pwm";
+			};
+
 			uart0_pins_a: uart0@0 {
 				pins = "PB8", "PB9";
 				function = "uart0";
