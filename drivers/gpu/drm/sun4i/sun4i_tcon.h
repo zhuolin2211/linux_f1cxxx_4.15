@@ -145,9 +145,15 @@
 
 struct sun4i_tcon_quirks {
 	bool	has_unknown_mux; /* sun5i has undocumented mux */
+	bool	has_channel_0;	/* some A83T+ TCONs don't have channel 0*/
 	bool	has_channel_1;	/* a33 does not have channel 1 */
 	/* Some DE2 can swap the mixer<->TCON connection */
 	bool	swappable_input;
+	/*
+	 * H3 TCON1 has its clock feed from TVE mod clock, and if TCON
+	 * change it, the TVE will refuse to generate output signal.
+	 */
+	bool	has_sclk1_preset;
 };
 
 struct sun4i_tcon {

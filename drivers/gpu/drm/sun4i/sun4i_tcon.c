@@ -58,6 +58,7 @@ void sun4i_tcon_channel_disable(struct sun4i_tcon *tcon, int channel)
 {
 	/* Disable the TCON's channel */
 	if (channel == 0) {
+		WARN_ON(!tcon->quirks->has_channel_0);
 		regmap_update_bits(tcon->regs, SUN4I_TCON0_CTL_REG,
 				   SUN4I_TCON0_CTL_TCON_ENABLE, 0);
 		clk_disable_unprepare(tcon->dclk);
@@ -75,6 +76,7 @@ void sun4i_tcon_channel_enable(struct sun4i_tcon *tcon, int channel)
 {
 	/* Enable the TCON's channel */
 	if (channel == 0) {
+		WARN_ON(!tcon->quirks->has_channel_0);
 		regmap_update_bits(tcon->regs, SUN4I_TCON0_CTL_REG,
 				   SUN4I_TCON0_CTL_TCON_ENABLE,
 				   SUN4I_TCON0_CTL_TCON_ENABLE);
@@ -133,6 +135,7 @@ void sun4i_tcon0_mode_set(struct sun4i_tcon *tcon,
 
 	/* Configure the dot clock */
 	clk_set_rate(tcon->dclk, mode->crtc_clock * 1000);
+	WARN_ON(!tcon->quirks->has_channel_0);
 
 	/* Adjust clock delay */
 	clk_delay = sun4i_tcon_get_clk_delay(mode, 0);
@@ -210,7 +213,8 @@ void sun4i_tcon1_mode_set(struct sun4i_tcon *tcon,
 	WARN_ON(!tcon->quirks->has_channel_1);
 
 	/* Configure the dot clock */
-	clk_set_rate(tcon->sclk1, mode->crtc_clock * 1000);
+	if (!tcon->quirks->has_sclk1_preset)
+		clk_set_rate(tcon->sclk1, mode->crtc_clock * 1000);
 
 	/* Adjust clock delay */
 	clk_delay = sun4i_tcon_get_clk_delay(mode, 1);
@@ -328,10 +332,12 @@ static int sun4i_tcon_init_clocks(struct device *dev,
 	}
 	clk_prepare_enable(tcon->clk);
 
-	tcon->sclk0 = devm_clk_get(dev, "tcon-ch0");
-	if (IS_ERR(tcon->sclk0)) {
-		dev_err(dev, "Couldn't get the TCON channel 0 clock\n");
-		return PTR_ERR(tcon->sclk0);
+	if (tcon->quirks->has_channel_0) {
+		tcon->sclk0 = devm_clk_get(dev, "tcon-ch0");
+		if (IS_ERR(tcon->sclk0)) {
+			dev_err(dev, "Couldn't get the TCON channel 0 clock\n");
+			return PTR_ERR(tcon->sclk0);
+		}
 	}
 
 	if (tcon->quirks->has_channel_1) {
@@ -602,10 +608,12 @@ static int sun4i_tcon_bind(struct device *dev, struct device *master,
 		goto err_free_clocks;
 	}
 
-	ret = sun4i_dclk_create(dev, tcon);
-	if (ret) {
-		dev_err(dev, "Couldn't create our TCON dot clock\n");
-		goto err_free_clocks;
+	if (tcon->quirks->has_channel_0) {
+		ret = sun4i_dclk_create(dev, tcon);
+		if (ret) {
+			dev_err(dev, "Couldn't create our TCON dot clock\n");
+			goto err_free_clocks;
+		}
 	}
 
 	ret = sun4i_tcon_init_irq(dev, tcon);
@@ -630,7 +638,8 @@ static int sun4i_tcon_bind(struct device *dev, struct device *master,
 	return 0;
 
 err_free_dotclock:
-	sun4i_dclk_free(tcon);
+	if (tcon->quirks->has_channel_0)
+		sun4i_dclk_free(tcon);
 err_free_clocks:
 	sun4i_tcon_free_clocks(tcon);
 err_assert_reset:
@@ -644,7 +653,9 @@ static void sun4i_tcon_unbind(struct device *dev, struct device *master,
 	struct sun4i_tcon *tcon = dev_get_drvdata(dev);
 
 	list_del(&tcon->list);
-	sun4i_dclk_free(tcon);
+
+	if (tcon->quirks->has_channel_0)
+		sun4i_dclk_free(tcon);
 	sun4i_tcon_free_clocks(tcon);
 }
 
@@ -686,24 +697,36 @@ static int sun4i_tcon_remove(struct platform_device *pdev)
 }
 
 static const struct sun4i_tcon_quirks sun5i_a13_quirks = {
-	.has_unknown_mux = true,
-	.has_channel_1	= true,
+	.has_unknown_mux	= true,
+	.has_channel_0		= true,
+	.has_channel_1		= true,
 };
 
 static const struct sun4i_tcon_quirks sun6i_a31_quirks = {
-	.has_channel_1	= true,
+	.has_channel_0		= true,
+	.has_channel_1		= true,
 };
 
 static const struct sun4i_tcon_quirks sun6i_a31s_quirks = {
-	.has_channel_1	= true,
+	.has_channel_0		= true,
+	.has_channel_1		= true,
 };
 
 static const struct sun4i_tcon_quirks sun8i_a33_quirks = {
-	/* nothing is supported */
+	.has_channel_0	= true,
 };
 
 static const struct sun4i_tcon_quirks sun8i_v3s_quirks = {
-	/* nothing is supported */
+	.has_channel_0	= true,
+};
+
+static const struct sun4i_tcon_quirks sun8i_a83t_tcon1_quirks = {
+	.has_channel_1	= true,
+};
+
+static const struct sun4i_tcon_quirks sun8i_h3_tcon1_quirks = {
+	.has_channel_1	= true,
+	.has_sclk1_preset	= true,
 };
 
 static const struct of_device_id sun4i_tcon_of_table[] = {
@@ -712,6 +735,8 @@ static const struct of_device_id sun4i_tcon_of_table[] = {
 	{ .compatible = "allwinner,sun6i-a31s-tcon", .data = &sun6i_a31s_quirks },
 	{ .compatible = "allwinner,sun8i-a33-tcon", .data = &sun8i_a33_quirks },
 	{ .compatible = "allwinner,sun8i-v3s-tcon", .data = &sun8i_v3s_quirks },
+	{ .compatible = "allwinner,sun8i-a83t-tcon1", .data = &sun8i_a83t_tcon1_quirks },
+	{ .compatible = "allwinner,sun8i-h3-tcon1", .data = &sun8i_h3_tcon1_quirks },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, sun4i_tcon_of_table);
