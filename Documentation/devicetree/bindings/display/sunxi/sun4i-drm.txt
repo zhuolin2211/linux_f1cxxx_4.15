@@ -32,6 +32,8 @@ Required properties:
    * allwinner,sun6i-a31s-tcon
    * allwinner,sun8i-a33-tcon
    * allwinner,sun8i-v3s-tcon
+   * allwinner,sun8i-a83t-tcon1
+   * allwinner,sun8i-h3-tcon1
  - reg: base address and size of memory-mapped region
  - interrupts: interrupt associated to this IP
  - clocks: phandles to the clocks feeding the TCON
@@ -41,7 +43,6 @@ Required properties:
 
  - clock-names: the clock names mentioned above
  - reset-names: the reset names mentioned above
- - clock-output-names: Name of the pixel clock created
 
 - ports: A ports node with endpoint definitions as defined in
   Documentation/devicetree/bindings/media/video-interfaces.txt. The
@@ -52,12 +53,15 @@ Required properties:
   second the block connected to the TCON channel 1 (usually the TV
   encoder)
 
-On TCONs that have a channel 0 (currently all TCONs supported), there
+On TCONs that have a channel 0 (the TCONs in A13/31/33 and V3s), there
 is one more clock required:
    - 'tcon-ch0': The clock driving the TCON channel 0
+One more property is also required for these SoCs:
+ - clock-output-names: Name of the pixel clock created
 
 On TCONs that have a channel 1 (currently all TCONs except the ones in
-A33 and V3s), there is one more clock required:
+A33 and V3s) and have a channel clock for channel 1 (H3's TCON1 do not
+have such a clock), there is one more clock required:
    - 'tcon-ch1': The clock driving the TCON channel 1
 
 DRC
