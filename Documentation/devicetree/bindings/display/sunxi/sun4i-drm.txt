@@ -150,6 +150,8 @@ supported.
 
 Required properties:
   - compatible: value must be one of:
+    * allwinner,sun8i-a83t-de2-mixer0
+    * allwinner,sun8i-a83t-de2-mixer1
     * allwinner,sun8i-v3s-de2-mixer
   - reg: base address and size of the memory-mapped region.
   - clocks: phandles to the clocks feeding the frontend and backend
