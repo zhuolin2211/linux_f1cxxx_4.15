@@ -56,6 +56,8 @@ EXPORT_SYMBOL(sun4i_tcon_enable);
 
 void sun4i_tcon_channel_disable(struct sun4i_tcon *tcon, int channel)
 {
+	DRM_DEBUG_DRIVER("Disabling TCON channel %d\n", channel);
+
 	/* Disable the TCON's channel */
 	if (channel == 0) {
 		WARN_ON(!tcon->quirks->has_channel_0);
@@ -74,6 +76,8 @@ EXPORT_SYMBOL(sun4i_tcon_channel_disable);
 
 void sun4i_tcon_channel_enable(struct sun4i_tcon *tcon, int channel)
 {
+	DRM_DEBUG_DRIVER("Enabling TCON channel %d\n", channel);
+
 	/* Enable the TCON's channel */
 	if (channel == 0) {
 		WARN_ON(!tcon->quirks->has_channel_0);
