@@ -100,6 +100,8 @@ static int sun4i_drv_bind(struct device *dev)
 		goto free_drm;
 	}
 	drm->dev_private = drv;
+	INIT_LIST_HEAD(&drv->backend_list);
+	INIT_LIST_HEAD(&drv->tcon_list);
 
 	/* drm_vblank_init calls kcalloc, which can fail */
 	ret = drm_vblank_init(drm, 1);
