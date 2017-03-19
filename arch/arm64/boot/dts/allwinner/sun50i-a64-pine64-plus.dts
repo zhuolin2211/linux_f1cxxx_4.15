@@ -54,3 +54,7 @@
 	pinctrl-0 = <&emac_rgmii_pins>;
 	phy-mode = "rgmii";
 };
+
+&ext_phy {
+	realtek,disable-rx-delay;
+};
