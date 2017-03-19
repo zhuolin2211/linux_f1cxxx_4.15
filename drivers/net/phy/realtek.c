@@ -13,6 +13,7 @@
  * option) any later version.
  *
  */
+#include <linux/of.h>
 #include <linux/phy.h>
 #include <linux/module.h>
 
@@ -26,6 +27,8 @@
 #define RTL8211_PAGE_SELECT	0x1f
 
 #define RTL8211E_INER_LINK_STATUS 0x400
+#define RTL8211E_EXT_PAGE_SELECT 0x1e
+#define RTL8211E_EXT_PAGE	0x7
 
 #define RTL8211F_INER_LINK_STATUS 0x0010
 #define RTL8211F_INSR		0x1d
@@ -95,6 +98,35 @@ static int rtl8211f_config_intr(struct phy_device *phydev)
 	return err;
 }
 
+static int rtl8211e_probe(struct phy_device *phydev)
+{
+	struct device *dev = &phydev->mdio.dev;
+	struct device_node *of_node = dev->of_node;
+	u16 reg;
+
+	if (of_node && of_property_read_bool(of_node, "realtek,disable-rx-delay")) {
+		/* Select extension page 0xa4 */
+		phy_write(phydev, RTL8211_PAGE_SELECT, RTL8211E_EXT_PAGE);
+		/* These magic numbers are received from Realtek via Pine64 */
+		phy_write(phydev, RTL8211E_EXT_PAGE_SELECT, 0xa4);
+
+		reg = phy_read(phydev, 0x1c);
+
+		/*
+		 * These bits are not covered on the datasheet, however
+		 * they changed in the magic register values provided.
+		 */
+		reg |= BIT(13);
+		reg &= ~BIT(14);
+		phy_write(phydev, 0x1c, reg);
+
+		/* Restore to default page 0 */
+		phy_write(phydev, RTL8211_PAGE_SELECT, 0);
+	}
+
+	return 0;
+}
+
 static int rtl8211f_config_init(struct phy_device *phydev)
 {
 	int ret;
@@ -159,6 +191,7 @@ static struct phy_driver realtek_drvs[] = {
 		.features	= PHY_GBIT_FEATURES,
 		.flags		= PHY_HAS_INTERRUPT,
 		.config_aneg	= &genphy_config_aneg,
+		.probe		= rtl8211e_probe,
 		.read_status	= &genphy_read_status,
 		.ack_interrupt	= &rtl821x_ack_interrupt,
 		.config_intr	= &rtl8211e_config_intr,
