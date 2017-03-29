@@ -133,7 +133,7 @@ struct drm_plane **sun4i_layers_init(struct drm_device *drm,
 				     struct sun4i_crtc *crtc)
 {
 	struct drm_plane **planes;
-	struct sun4i_backend *backend = crtc->backend;
+	struct sun4i_backend *backend = crtc->engine;
 	int i;
 
 	planes = devm_kcalloc(drm->dev, ARRAY_SIZE(sun4i_backend_planes) + 1,

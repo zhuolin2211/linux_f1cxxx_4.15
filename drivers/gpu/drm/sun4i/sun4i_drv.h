@@ -17,8 +17,9 @@
 #include <linux/regmap.h>
 
 struct sun4i_drv {
-	struct sun4i_backend	*backend;
+	void			*engine;
 	struct sun4i_tcon	*tcon;
+	const struct sunxi_engine_ops *engine_ops;
 
 	struct drm_fbdev_cma	*fbdev;
 };

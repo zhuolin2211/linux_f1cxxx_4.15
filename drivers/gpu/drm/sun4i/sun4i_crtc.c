@@ -25,10 +25,9 @@
 
 #include <video/videomode.h>
 
-#include "sun4i_backend.h"
 #include "sun4i_crtc.h"
 #include "sun4i_drv.h"
-#include "sun4i_layer.h"
+#include "sunxi_engine.h"
 #include "sun4i_tcon.h"
 
 static void sun4i_crtc_atomic_begin(struct drm_crtc *crtc,
@@ -56,7 +55,7 @@ static void sun4i_crtc_atomic_flush(struct drm_crtc *crtc,
 
 	DRM_DEBUG_DRIVER("Committing plane changes\n");
 
-	sun4i_backend_commit(scrtc->backend);
+	scrtc->engine_ops->commit(scrtc->engine);
 
 	if (event) {
 		crtc->state->event = NULL;
@@ -134,8 +133,8 @@ static const struct drm_crtc_funcs sun4i_crtc_funcs = {
 	.disable_vblank		= sun4i_crtc_disable_vblank,
 };
 
-struct sun4i_crtc *sun4i_crtc_init(struct drm_device *drm,
-				   struct sun4i_backend *backend,
+struct sun4i_crtc *sun4i_crtc_init(struct drm_device *drm, void *engine,
+				   const struct sunxi_engine_ops *engine_ops,
 				   struct sun4i_tcon *tcon)
 {
 	struct sun4i_crtc *scrtc;
@@ -146,11 +145,12 @@ struct sun4i_crtc *sun4i_crtc_init(struct drm_device *drm,
 	scrtc = devm_kzalloc(drm->dev, sizeof(*scrtc), GFP_KERNEL);
 	if (!scrtc)
 		return ERR_PTR(-ENOMEM);
-	scrtc->backend = backend;
+	scrtc->engine = engine;
+	scrtc->engine_ops = engine_ops;
 	scrtc->tcon = tcon;
 
 	/* Create our layers */
-	planes = sun4i_layers_init(drm, scrtc);
+	planes = engine_ops->layers_init(drm, scrtc);
 	if (IS_ERR(planes)) {
 		dev_err(drm->dev, "Couldn't create the planes\n");
 		return NULL;
