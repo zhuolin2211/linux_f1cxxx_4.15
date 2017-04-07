@@ -257,6 +257,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&emac_rmii_pins>;
 	phy-handle = <&ext_phy>;
+	phy-supply = <&reg_dc1sw>;
 	phy-mode = "rmii";
 
 	allwinner,leds-active-low;
