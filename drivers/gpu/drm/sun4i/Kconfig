@@ -32,3 +32,12 @@ config DRM_SUN4I_SUN8I_MIXER
 	  Allwinner Display Engine 2.0, which has a mixer to do some
 	  graphics mixture and feed graphics to TCON, If M is
 	  selected the module will be called sun8i-mixer.
+
+config DRM_DW_HDMI_SUNXI
+	tristate "Support for Allwinner version of DesignWare HDMI"
+	depends on DRM_SUN4I
+	select DRM_DW_HDMI
+	help
+	  Choose this option if you have an Allwinner SoC with the
+	  DesignWare HDMI controller with custom HDMI PHY. If M is
+	  selected the module will be called dw_hdmi-sunxi.
