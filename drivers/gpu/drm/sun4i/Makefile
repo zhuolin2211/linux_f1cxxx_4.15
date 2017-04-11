@@ -16,3 +16,5 @@ obj-$(CONFIG_DRM_SUN4I)		+= sun4i_tv.o
 
 obj-$(CONFIG_DRM_SUN4I_BACKEND)		+= sun4i-backend.o
 obj-$(CONFIG_DRM_SUN4I_SUN8I_MIXER)	+= sun8i-mixer.o
+
+obj-$(CONFIG_DRM_DW_HDMI_SUNXI)	+= dw_hdmi-sunxi.o
