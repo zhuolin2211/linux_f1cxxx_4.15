@@ -98,6 +98,10 @@
 	status = "okay";
 };
 
+&de {
+	status = "okay";
+};
+
 &ehci1 {
 	status = "okay";
 };
@@ -107,6 +111,10 @@
 };
 
 &ehci3 {
+	status = "okay";
+};
+
+&hdmi {
 	status = "okay";
 };
 
@@ -155,6 +163,10 @@
 		pins = "PL3";
 		function = "gpio_in";
 	};
+};
+
+&tcon0 {
+	status = "okay";
 };
 
 &uart0 {
