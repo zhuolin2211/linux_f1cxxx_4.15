@@ -1929,7 +1929,11 @@ static int clk_core_get_phase(struct clk_core *core)
 	int ret;
 
 	clk_prepare_lock();
-	ret = core->phase;
+	if (core && (core->flags & CLK_GET_PHASE_NOCACHE) &&
+	    core->ops->get_phase)
+	    ret = core->ops->get_phase(core->hw);
+	else
+	    ret = core->phase;
 	clk_prepare_unlock();
 
 	return ret;
