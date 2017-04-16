@@ -41,6 +41,8 @@
  */
 
 #include "sunxi-h3-h5.dtsi"
+#include <dt-bindings/clock/sun8i-de2.h>
+#include <dt-bindings/reset/sun8i-de2.h>
 
 / {
 	cpus {
@@ -72,6 +74,38 @@
 		};
 	};
 
+	de: display-engine {
+		compatible = "allwinner,sun8i-h3-display-engine";
+		allwinner,pipelines = <&de2_mixer0>,
+				      <&de2_mixer1>;
+		status = "disabled";
+	};
+
+	soc {
+		tve0: tv-encoder@1e00000 {
+			compatible = "allwinner,sun8i-h3-tv-encoder";
+			reg = <0x01e00000 0x1000>;
+			clocks = <&ccu CLK_BUS_TVE>, <&ccu CLK_TVE>;
+			clock-names = "bus", "mod";
+			resets = <&ccu RST_BUS_TVE>;
+			status = "disabled";
+
+			assigned-clocks = <&ccu CLK_TVE>;
+			assigned-clock-parents = <&ccu CLK_PLL_DE>;
+			assigned-clock-rates = <216000000>;
+
+			port {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				tve0_in_tcon1: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&tcon1_out_tve0>;
+				};
+			};
+		};
+	};
+
 	timer {
 		compatible = "arm,armv7-timer";
 		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
@@ -83,6 +117,14 @@
 
 &ccu {
 	compatible = "allwinner,sun8i-h3-ccu";
+};
+
+&de2_clocks {
+	compatible = "allwinner,sun8i-a83t-de2-clk";
+};
+
+&de2_mixer1 {
+	resets = <&de2_clocks RST_WB>;
 };
 
 &mmc0 {
