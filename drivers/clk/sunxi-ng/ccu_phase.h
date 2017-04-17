@@ -38,6 +38,20 @@ struct ccu_phase {
 		}							\
 	}
 
+#define SUNXI_CCU_PHASE_MMC_NEW_TIMING(_struct, _name, _parent, _reg,	\
+				       _shift, _width, _flags)		\
+	struct ccu_phase _struct = {					\
+		.shift	= _shift,					\
+		.width	= _width,					\
+		.common	= {						\
+			.reg		= _reg,				\
+			.hw.init	= CLK_HW_INIT(_name,		\
+						      _parent,		\
+						      &ccu_phase_mmc_new_timing_ops, \
+						      _flags),		\
+		}							\
+	}
+
 static inline struct ccu_phase *hw_to_ccu_phase(struct clk_hw *hw)
 {
 	struct ccu_common *common = hw_to_ccu_common(hw);
@@ -46,5 +60,7 @@ static inline struct ccu_phase *hw_to_ccu_phase(struct clk_hw *hw)
 }
 
 extern const struct clk_ops ccu_phase_ops;
+
+extern const struct clk_ops ccu_phase_mmc_new_timing_ops;
 
 #endif /* _CCU_PHASE_H_ */

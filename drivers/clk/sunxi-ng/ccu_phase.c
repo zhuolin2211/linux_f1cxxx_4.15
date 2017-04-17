@@ -8,6 +8,7 @@
  * the License, or (at your option) any later version.
  */
 
+#include <linux/bitops.h>
 #include <linux/clk-provider.h>
 #include <linux/spinlock.h>
 
@@ -123,4 +124,50 @@ static int ccu_phase_set_phase(struct clk_hw *hw, int degrees)
 const struct clk_ops ccu_phase_ops = {
 	.get_phase	= ccu_phase_get_phase,
 	.set_phase	= ccu_phase_set_phase,
+};
+
+/*
+ * The MMC clocks on newer SoCs support the "new timing mode". Under
+ * this mode, the output of the clock is divided by 2, and the clock
+ * delays no longer apply.
+ *
+ * Due to how the clock tree is modeled and setup, we need to model
+ * this function in two places, the master mmc clock and the two
+ * child phase clocks. In the mmc clock, we can easily model the
+ * mode bit as an extra variable post-divider. In the phase clocks,
+ * we check the bit and return -ENOTSUPP if the bit is set, signaling
+ * that the phase clocks are not to be used.
+ *
+ * We do not support runtime configuration of the modes. Instead a
+ * mode is enforced at CCU probe time.
+ */
+#define CCU_MMC_NEW_TIMING_MODE	    BIT(30)
+
+static int ccu_phase_mmc_new_timing_get_phase(struct clk_hw *hw)
+{
+	struct ccu_phase *phase = hw_to_ccu_phase(hw);
+	u32 reg;
+
+	reg = readl(phase->common.base + phase->common.reg);
+	if (reg & CCU_MMC_NEW_TIMING_MODE)
+		return -ENOTSUPP;
+
+	return ccu_phase_get_phase(hw);
+}
+
+static int ccu_phase_mmc_new_timing_set_phase(struct clk_hw *hw, int degrees)
+{
+	struct ccu_phase *phase = hw_to_ccu_phase(hw);
+	u32 reg;
+
+	reg = readl(phase->common.base + phase->common.reg);
+	if (reg & CCU_MMC_NEW_TIMING_MODE)
+		return -ENOTSUPP;
+
+	return ccu_phase_set_phase(hw, degrees);
+}
+
+const struct clk_ops ccu_phase_mmc_new_timing_ops = {
+	.get_phase	= ccu_phase_mmc_new_timing_get_phase,
+	.set_phase	= ccu_phase_mmc_new_timing_set_phase,
 };
