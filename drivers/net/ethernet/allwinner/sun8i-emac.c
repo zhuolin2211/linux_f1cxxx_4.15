@@ -882,6 +882,8 @@ static int sun8i_mdio_write(struct mii_bus *bus, int phy_addr, int phy_reg,
 		return err;
 	}
 
+	reg = MDIO_CMD_MII_BUSY;
+
 	reg &= ~MDIO_CMD_MII_PHY_REG_ADDR_MASK;
 	reg |= (phy_reg << MDIO_CMD_MII_PHY_REG_ADDR_SHIFT) &
 		MDIO_CMD_MII_PHY_REG_ADDR_MASK;
@@ -891,10 +893,9 @@ static int sun8i_mdio_write(struct mii_bus *bus, int phy_addr, int phy_reg,
 		MDIO_CMD_MII_PHY_ADDR_MASK;
 
 	reg |= MDIO_CMD_MII_WRITE;
-	reg |= MDIO_CMD_MII_BUSY;
 
-	writel(reg, priv->base + EMAC_MDIO_CMD);
 	writel(data, priv->base + EMAC_MDIO_DATA);
+	writel(reg, priv->base + EMAC_MDIO_CMD);
 
 	err = readl_poll_timeout(priv->base + EMAC_MDIO_CMD, reg,
 				 !(reg & MDIO_CMD_MII_BUSY), 100, 10000);
@@ -1161,6 +1162,9 @@ static int sun8i_emac_power(struct net_device *ndev)
 		ret = regulator_enable(priv->regulator);
 		if (ret)
 			goto err_regulator;
+
+		/* Sleep a period of time, to make the PHY to get ready */
+		msleep(500);
 	}
 
 	return 0;
