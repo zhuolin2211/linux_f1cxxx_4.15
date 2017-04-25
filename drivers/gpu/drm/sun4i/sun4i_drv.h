@@ -20,7 +20,6 @@
 struct sun4i_drv {
 	struct list_head	backend_list;
 	struct list_head	tcon_list;
-	struct sun4i_tcon	*tcon;
 
 	struct drm_fbdev_cma	*fbdev;
 };
