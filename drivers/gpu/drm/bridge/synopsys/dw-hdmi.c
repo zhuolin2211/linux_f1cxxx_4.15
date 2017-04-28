@@ -1933,9 +1933,14 @@ static int dw_hdmi_bridge_attach(struct drm_bridge *bridge)
 	struct dw_hdmi *hdmi = bridge->driver_private;
 	struct drm_encoder *encoder = bridge->encoder;
 	struct drm_connector *connector = &hdmi->connector;
+	const struct dw_hdmi_phy_ops *phy_ops = hdmi->phy.ops;
 
 	connector->interlace_allowed = 1;
-	connector->polled = DRM_CONNECTOR_POLL_HPD;
+	if (phy_ops && phy_ops->poll_hpd)
+		connector->polled = DRM_CONNECTOR_POLL_CONNECT |
+				    DRM_CONNECTOR_POLL_DISCONNECT;
+	else
+		connector->polled = DRM_CONNECTOR_POLL_HPD;
 
 	drm_connector_helper_add(connector, &dw_hdmi_connector_helper_funcs);
 
