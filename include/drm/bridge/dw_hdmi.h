@@ -120,6 +120,7 @@ struct dw_hdmi_phy_ops {
 	void (*update_hpd)(struct dw_hdmi *hdmi, void *data,
 			   bool force, bool disabled, bool rxsense);
 	void (*setup_hpd)(struct dw_hdmi *hdmi, void *data);
+	bool poll_hpd;
 };
 
 struct dw_hdmi_plat_data {
