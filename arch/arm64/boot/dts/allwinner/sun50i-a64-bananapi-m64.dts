@@ -67,6 +67,10 @@
 	};
 };
 
+&ehci1 {
+	status = "okay";
+};
+
 &i2c1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1_pins>;
@@ -75,6 +79,10 @@
 
 &i2c1_pins {
 	bias-pull-up;
+};
+
+&ohci1 {
+	status = "okay";
 };
 
 &mmc0 {
@@ -116,5 +124,14 @@
 &uart1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart1_pins>, <&uart1_rts_cts_pins>;
+	status = "okay";
+};
+
+&usb_otg {
+	dr_mode = "peripheral";
+	status = "okay";
+};
+
+&usbphy {
 	status = "okay";
 };
