@@ -53,6 +53,7 @@
 	aliases {
 		serial0 = &uart0;
 		serial1 = &uart1;
+		ethernet0 = &emac;
 	};
 
 	chosen {
@@ -76,6 +77,15 @@
 	status = "okay";
 };
 
+&emac {
+	pinctrl-names = "default";
+	pinctrl-0 = <&emac_rgmii_pins>;
+	phy-handle = <&ext_phy>;
+	phy-supply = <&reg_dc1sw>;
+	phy-mode = "rgmii";
+	status = "okay";
+};
+
 &i2c1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1_pins>;
@@ -88,6 +98,12 @@
 
 &ohci1 {
 	status = "okay";
+};
+
+&mdio {
+	ext_phy: ethernet-phy@1 {
+		reg = <1>;
+	};
 };
 
 &mmc0 {
