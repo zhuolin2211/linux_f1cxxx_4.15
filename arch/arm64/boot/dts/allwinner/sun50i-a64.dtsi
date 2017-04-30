@@ -65,6 +65,15 @@
 				 <&ccu CLK_TCON1>, <&ccu CLK_HDMI>;
 			status = "disabled";
 		};
+
+		simplefb_lcd: framebuffer@1 {
+			compatible = "allwinner,simple-framebuffer",
+				     "simple-framebuffer";
+			allwinner,pipeline = "de0-lcd0";
+			clocks = <&ccu CLK_BUS_TCON0>, <&ccu CLK_BUS_DE>,
+				 <&ccu CLK_DE>, <&ccu CLK_TCON0>;
+			status = "disabled";
+		};
 	};
 
 	cpus {
