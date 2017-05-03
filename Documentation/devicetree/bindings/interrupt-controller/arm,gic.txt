@@ -76,6 +76,10 @@ Optional
 		  the power controller specified by phandle, used when the GIC
 		  is part of a Power or Clock Domain.
 
+- arm,always-secure : The GIC implementation is broken that it remains in
+		      secure state even if the CPU is in non-secure state.
+		      (This situation has been seen on Allwinner A80 and A83T
+		      SoCs)
 
 Example:
 
