@@ -434,6 +434,7 @@
 			interrupt-controller;
 			#interrupt-cells = <3>;
 			interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
+			arm,always-secure;
 		};
 
 		de_clocks: clock@03000000 {
