@@ -494,7 +494,8 @@ struct drm_bridge *sun4i_tcon_find_bridge(struct device_node *node)
  * requested via the get_id function of the engine.
  */
 static struct sunxi_engine *sun4i_tcon_find_engine(struct sun4i_drv *drv,
-						   struct device_node *node)
+						   struct device_node *node,
+						   bool skip_bonus_ep)
 {
 	struct device_node *port, *ep, *remote;
 	struct sunxi_engine *engine;
@@ -508,6 +509,20 @@ static struct sunxi_engine *sun4i_tcon_find_engine(struct sun4i_drv *drv,
 		if (!remote)
 			continue;
 
+		if (skip_bonus_ep) {
+			struct of_endpoint endpoint;
+
+			if (of_graph_parse_endpoint(ep, &endpoint)) {
+				DRM_DEBUG_DRIVER("Couldn't parse endpoint\n");
+				continue;
+			}
+
+			if (endpoint.id) {
+				DRM_DEBUG_DRIVER("Skipping bonus mixer->TCON connection when searching engine\n");
+				continue;
+			}
+		}
+
 		/* does this node match any registered engines? */
 		list_for_each_entry(engine, &drv->engine_list, list) {
 			if (remote == engine->node) {
@@ -518,7 +533,7 @@ static struct sunxi_engine *sun4i_tcon_find_engine(struct sun4i_drv *drv,
 		}
 
 		/* keep looking through upstream ports */
-		engine = sun4i_tcon_find_engine(drv, remote);
+		engine = sun4i_tcon_find_engine(drv, remote, skip_bonus_ep);
 		if (!IS_ERR(engine)) {
 			of_node_put(remote);
 			of_node_put(port);
@@ -538,20 +553,26 @@ static int sun4i_tcon_bind(struct device *dev, struct device *master,
 	struct sun4i_tcon *tcon;
 	int ret;
 
-	engine = sun4i_tcon_find_engine(drv, dev->of_node);
-	if (IS_ERR(engine)) {
-		dev_err(dev, "Couldn't find matching engine\n");
-		return -EPROBE_DEFER;
-	}
-
 	tcon = devm_kzalloc(dev, sizeof(*tcon), GFP_KERNEL);
 	if (!tcon)
 		return -ENOMEM;
 	dev_set_drvdata(dev, tcon);
+	tcon->quirks = of_device_get_match_data(dev);
 	tcon->drm = drm;
 	tcon->dev = dev;
+
+	/*
+	 * As we keep the connection between DE2 mixer and TCON not swapped,
+	 * skip the bonus endpoints (which stand for swapped connection)
+	 * when finding the correspoing engine.
+	 */
+	engine = sun4i_tcon_find_engine(drv, dev->of_node,
+					tcon->quirks->swappable_input);
+	if (IS_ERR(engine)) {
+		dev_err(dev, "Couldn't find matching engine\n");
+		return -EPROBE_DEFER;
+	}
 	tcon->id = sunxi_engine_get_id(engine);
-	tcon->quirks = of_device_get_match_data(dev);
 
 	tcon->lcd_rst = devm_reset_control_get(dev, "lcd");
 	if (IS_ERR(tcon->lcd_rst)) {
