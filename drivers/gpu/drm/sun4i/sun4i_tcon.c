@@ -259,7 +259,7 @@ void sun4i_tcon1_mode_set(struct sun4i_tcon *tcon,
 		     SUN4I_TCON1_BASIC3_H_BACKPORCH(bp));
 
 	bp = mode->crtc_vtotal - mode->crtc_vsync_start;
-	val = mode->crtc_vtotal;
+	val = mode->vtotal;
 	if (!(mode->flags & DRM_MODE_FLAG_INTERLACE))
 		val = val * 2;
 	DRM_DEBUG_DRIVER("Setting vertical total %d, backporch %d\n",
