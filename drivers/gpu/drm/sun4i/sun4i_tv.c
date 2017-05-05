@@ -119,6 +119,11 @@
 
 #define SUN4I_TVE_WSS_DATA2_REG		0x244
 
+#define SUN50I_H5_TVE_UNK0		0x304
+#define SUN50I_H5_TVE_UNK0_VAL		0x2850000
+#define SUN50I_H5_TVE_UNK1		0x308
+#define SUN50I_H5_TVE_UNK1_VAL		0x00101110
+
 struct color_gains {
 	u16	cb;
 	u16	cr;
@@ -174,6 +179,7 @@ struct sun4i_tv_quirks {
 	bool has_mod_clk;
 	bool fixed_clock;
 	unsigned long fixed_clock_rate;
+	bool h5_unk;
 };
 
 struct sun4i_tv {
@@ -402,6 +408,14 @@ static void sun4i_tv_mode_set(struct drm_encoder *encoder,
 	const struct tv_mode *tv_mode = sun4i_tv_find_tv_by_mode(mode);
 
 	sun4i_tcon1_mode_set(tcon, mode);
+
+	if (tv->quirks->h5_unk) {
+		/* TODO: unknown registers */
+		regmap_write(tv->regs, SUN50I_H5_TVE_UNK0,
+			     SUN50I_H5_TVE_UNK0_VAL);
+		regmap_write(tv->regs, SUN50I_H5_TVE_UNK1,
+			     SUN50I_H5_TVE_UNK1_VAL);
+	}
 
 	/* Enable and map the DAC to the output */
 	regmap_update_bits(tv->regs, SUN4I_TVE_EN_REG,
@@ -733,6 +747,13 @@ static const struct sun4i_tv_quirks sun8i_h3_tv_quirks = {
 	.fixed_clock_rate = 216000000UL,
 };
 
+static const struct sun4i_tv_quirks sun50i_h5_tv_quirks = {
+	.has_mod_clk = true,
+	.fixed_clock = true,
+	.fixed_clock_rate = 216000000UL,
+	.h5_unk = true,
+};
+
 static const struct of_device_id sun4i_tv_of_table[] = {
 	{
 		.compatible = "allwinner,sun4i-a10-tv-encoder",
@@ -741,6 +762,10 @@ static const struct of_device_id sun4i_tv_of_table[] = {
 	{
 		.compatible = "allwinner,sun8i-h3-tv-encoder",
 		.data = &sun8i_h3_tv_quirks,
+	},
+	{
+		.compatible = "allwinner,sun50i-h5-tv-encoder",
+		.data = &sun50i_h5_tv_quirks,
 	},
 	{ }
 };
