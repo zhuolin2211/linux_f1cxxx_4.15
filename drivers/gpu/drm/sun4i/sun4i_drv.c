@@ -104,7 +104,7 @@ static int sun4i_drv_bind(struct device *dev)
 	INIT_LIST_HEAD(&drv->tcon_list);
 
 	/* drm_vblank_init calls kcalloc, which can fail */
-	ret = drm_vblank_init(drm, 1);
+	ret = drm_vblank_init(drm, 2);
 	if (ret)
 		goto free_drm;
 
