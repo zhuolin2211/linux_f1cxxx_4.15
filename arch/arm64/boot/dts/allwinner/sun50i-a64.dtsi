@@ -62,8 +62,8 @@
 			compatible = "allwinner,simple-framebuffer",
 				     "simple-framebuffer";
 			allwinner,pipeline = "de0-lcd1-hdmi";
-			clocks = <&ccu CLK_BUS_TCON1>, <&ccu CLK_BUS_DE>,
-				 <&ccu CLK_BUS_HDMI>, <&ccu CLK_DE>,
+			clocks = <&ccu CLK_BUS_TCON1>, <&de2_clocks CLK_BUS_MIXER0>,
+				 <&ccu CLK_BUS_HDMI>, <&de2_clocks CLK_MIXER0>,
 				 <&ccu CLK_TCON1>, <&ccu CLK_HDMI>;
 			status = "disabled";
 		};
@@ -72,8 +72,8 @@
 			compatible = "allwinner,simple-framebuffer",
 				     "simple-framebuffer";
 			allwinner,pipeline = "de0-lcd0";
-			clocks = <&ccu CLK_BUS_TCON0>, <&ccu CLK_BUS_DE>,
-				 <&ccu CLK_DE>, <&ccu CLK_TCON0>;
+			clocks = <&ccu CLK_BUS_TCON0>, <&de2_clocks CLK_BUS_MIXER0>,
+				 <&de2_clocks CLK_MIXER0>, <&ccu CLK_TCON0>;
 			status = "disabled";
 		};
 	};
