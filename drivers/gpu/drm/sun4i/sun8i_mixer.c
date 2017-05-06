@@ -102,6 +102,10 @@ static int sun8i_mixer_drm_format_to_layer(struct drm_plane *plane,
 					     u32 format, u32 *mode)
 {
 	switch (format) {
+	case DRM_FORMAT_ARGB8888:
+		*mode = SUN8I_MIXER_CHAN_UI_LAYER_ATTR_FBFMT_ARGB8888;
+		break;
+
 	case DRM_FORMAT_XRGB8888:
 		*mode = SUN8I_MIXER_CHAN_UI_LAYER_ATTR_FBFMT_XRGB8888;
 		break;

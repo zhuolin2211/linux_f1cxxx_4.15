@@ -63,6 +63,7 @@ static const struct drm_plane_funcs sun8i_mixer_layer_funcs = {
 
 static const uint32_t sun8i_mixer_layer_formats[] = {
 	DRM_FORMAT_RGB888,
+	DRM_FORMAT_ARGB8888,
 	DRM_FORMAT_XRGB8888,
 };
 
