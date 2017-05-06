@@ -23,6 +23,9 @@ Required properties:
   corresponding to the video input of the controller. The port shall have one
   endpoint connected to the corresponding TCON.
 
+Optional properties:
+- hvcc-supply: a regulator connected to the SoC's HVCC pin.
+
 Example:
 
 hdmi: hdmi@1ee0000 {
