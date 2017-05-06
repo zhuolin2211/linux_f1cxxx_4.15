@@ -180,6 +180,7 @@
 };
 
 &reg_dc1sw {
+	regulator-always-on;
 	regulator-name = "vcc-phy";
 };
 
