@@ -50,6 +50,7 @@ Required properties:
    * allwinner,sun6i-a31-tcon
    * allwinner,sun6i-a31s-tcon
    * allwinner,sun8i-a33-tcon
+   * allwinner,sun8i-a83t-tcon0
    * allwinner,sun8i-a83t-tcon1
    * allwinner,sun8i-h3-tcon1
    * allwinner,sun8i-v3s-tcon
@@ -222,6 +223,7 @@ Required properties:
     * allwinner,sun8i-a33-display-engine
     * allwinner,sun8i-h3-display-engine
     * allwinner,sun8i-v3s-display-engine
+    * allwinner,sun50i-a64-display-engine
 
   - allwinner,pipelines: list of phandle to the display engine
     frontends (DE 1.0) or mixers (DE 2.0) available.
