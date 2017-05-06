@@ -121,6 +121,10 @@
 	status = "okay";
 };
 
+&de {
+	status = "okay";
+};
+
 &ehci0 {
 	status = "okay";
 };
@@ -134,6 +138,10 @@
 };
 
 &ehci3 {
+	status = "okay";
+};
+
+&hdmi {
 	status = "okay";
 };
 
@@ -165,6 +173,10 @@
 };
 
 &ohci3 {
+	status = "okay";
+};
+
+&tcon0 {
 	status = "okay";
 };
 
