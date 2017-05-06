@@ -73,6 +73,10 @@
 	};
 };
 
+&de {
+	status = "okay";
+};
+
 &ehci1 {
 	status = "okay";
 };
@@ -83,6 +87,11 @@
 	phy-handle = <&ext_phy>;
 	phy-supply = <&reg_dc1sw>;
 	phy-mode = "rgmii";
+	status = "okay";
+};
+
+&hdmi {
+	hvcc-supply = <&reg_dldo1>;
 	status = "okay";
 };
 
@@ -265,6 +274,10 @@
 
 &reg_rtc_ldo {
 	regulator-name = "vcc-rtc";
+};
+
+&tcon1 {
+	status = "okay";
 };
 
 &uart0 {
