@@ -290,5 +290,6 @@
 
 &usbphy {
 	usb0_vbus-supply = <&reg_ldo_io0>;
+	usb1_vbus-supply = <&reg_ldo_io0>;
 	status = "okay";
 };
