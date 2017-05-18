@@ -93,11 +93,19 @@
 	};
 };
 
+&de {
+	status = "okay";
+};
+
 &ehci1 {
 	status = "okay";
 };
 
 &ehci2 {
+	status = "okay";
+};
+
+&hdmi {
 	status = "okay";
 };
 
@@ -169,6 +177,10 @@
 		pins = "PL7";
 		function = "gpio_out";
 	};
+};
+
+&tcon0 {
+	status = "okay";
 };
 
 &uart0 {
