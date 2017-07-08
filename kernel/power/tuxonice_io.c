@@ -596,7 +596,7 @@ static int worker_rw_loop(void *data)
     goto out;
   }
 
-  cpumask_copy(orig_mask, tsk_cpus_allowed(current));
+  cpumask_copy(&current->cpus_allowed, orig_mask);
 
   current->flags |= PF_NOFREEZE;
 

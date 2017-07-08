@@ -413,6 +413,8 @@ extern struct swap_info_struct *page_swap_info(struct page *);
 extern bool reuse_swap_page(struct page *, int *);
 extern int try_to_free_swap(struct page *);
 struct backing_dev_info;
+extern void get_swap_range_of_type(int type, swp_entry_t *start,
+		swp_entry_t *end, unsigned int limit);
 extern int init_swap_address_space(unsigned int type, unsigned long nr_pages);
 extern void exit_swap_address_space(unsigned int type);
 

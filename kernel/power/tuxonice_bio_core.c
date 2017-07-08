@@ -317,7 +317,7 @@ static void toi_end_bio(struct bio *bio)
 {
   struct page *page = bio->bi_io_vec[0].bv_page;
 
-  BUG_ON(bio->bi_error);
+  BUG_ON(bio->bi_status == BLK_STS_IOERR);
 
   unlock_page(page);
   bio_put(bio);
@@ -412,7 +412,7 @@ static int submit(int writing, struct block_device *dev, sector_t first_block,
   /* Still read the header! */
   if (unlikely(test_action_state(TOI_TEST_BIO) && writing)) {
     /* Fake having done the hard work */
-    bio->bi_error = 0;
+    bio->bi_status = BLK_STS_OK;
     toi_end_bio(bio);
   } else {
     submit_bio(bio);
@@ -1724,7 +1724,8 @@ static int try_to_open_resume_device(char *commandline, int quiet)
         O_RDONLY|O_LARGEFILE, 0);
 
     if (!IS_ERR(file) && file) {
-      vfs_getattr(&file->f_path, &stat);
+      vfs_getattr(&file->f_path, &stat,
+          STATX_INO, AT_STATX_SYNC_AS_STAT);
       filp_close(file, NULL);
     } else
       error = vfs_stat(commandline, &stat);

@@ -25,6 +25,7 @@
 #include <linux/hardirq.h>
 #include <linux/mmzone.h>
 #include <linux/console.h>
+#include <linux/sched/signal.h>
 #include <linux/tuxonice.h>
 
 #include "tuxonice_pageflags.h"

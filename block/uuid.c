@@ -146,7 +146,7 @@ static void uuid_end_bio(struct bio *bio)
 {
 	struct page *page = bio->bi_io_vec[0].bv_page;
 
-        if (bio->bi_error)
+        if (bio->bi_status == BLK_STS_IOERR)
             SetPageError(page);
 
 	unlock_page(page);
