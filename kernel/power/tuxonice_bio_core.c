@@ -381,7 +381,7 @@ static int submit(int writing, struct block_device *dev, sector_t first_block,
     }
   }
 
-  bio->bi_bdev = dev;
+  bio_set_dev(bio, dev);
   bio->bi_iter.bi_sector = first_block;
   bio->bi_private = (void *) ((unsigned long) free_group);
   bio->bi_end_io = toi_end_bio;
