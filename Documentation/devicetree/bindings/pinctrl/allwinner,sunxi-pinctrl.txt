@@ -27,6 +27,7 @@ Required properties:
   "allwinner,sun50i-a64-pinctrl"
   "allwinner,sun50i-a64-r-pinctrl"
   "allwinner,sun50i-h5-pinctrl"
+  "allwinner,sun50i-h6-pinctrl"
   "nextthing,gr8-pinctrl"
 
 - reg: Should contain the register physical address and length for the
@@ -39,7 +40,8 @@ Required properties:
 
 Note: For backward compatibility reasons, the hosc and losc clocks are only
 required if you need to use the optional input-debounce property. Any new
-device tree should set them.
+device tree should set them. For the pin controllers on Allwinner H6 SoC,
+there's no APB bus gate, and the "apb" clock should be omitted.
 
 Optional properties:
   - input-debounce: Array of debouncing periods in microseconds. One period per
