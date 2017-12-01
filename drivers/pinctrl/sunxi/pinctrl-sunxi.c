@@ -1182,7 +1182,12 @@ static int sunxi_pinctrl_setup_debounce(struct sunxi_pinctrl *pctl,
 	unsigned int hosc_div, losc_div;
 	struct clk *hosc, *losc;
 	u8 div, src;
-	int i, ret;
+	int i, ret, clk_count;
+
+	if (pctl->desc->without_bus_gate)
+		clk_count = 2;
+	else
+		clk_count = 3;
 
 	/* Deal with old DTs that didn't have the oscillators */
 	if (of_count_phandle_with_args(node, "clocks", "#clock-cells") != 3)
@@ -1360,15 +1365,19 @@ int sunxi_pinctrl_init_with_variant(struct platform_device *pdev,
 			goto gpiochip_error;
 	}
 
-	clk = devm_clk_get(&pdev->dev, NULL);
-	if (IS_ERR(clk)) {
-		ret = PTR_ERR(clk);
-		goto gpiochip_error;
-	}
+	if (!desc->without_bus_gate) {
+		clk = devm_clk_get(&pdev->dev, NULL);
+		if (IS_ERR(clk)) {
+			ret = PTR_ERR(clk);
+			goto gpiochip_error;
+		}
 
-	ret = clk_prepare_enable(clk);
-	if (ret)
-		goto gpiochip_error;
+		ret = clk_prepare_enable(clk);
+		if (ret)
+			goto gpiochip_error;
+	} else {
+		clk = NULL;
+	}
 
 	pctl->irq = devm_kcalloc(&pdev->dev,
 				 pctl->desc->irq_banks,
@@ -1425,7 +1434,8 @@ int sunxi_pinctrl_init_with_variant(struct platform_device *pdev,
 	return 0;
 
 clk_error:
-	clk_disable_unprepare(clk);
+	if (clk)
+		clk_disable_unprepare(clk);
 gpiochip_error:
 	gpiochip_remove(pctl->chip);
 	return ret;
