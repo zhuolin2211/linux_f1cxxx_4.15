@@ -256,5 +256,16 @@
 			resets = <&ccu RST_BUS_UART3>;
 			status = "disabled";
 		};
+
+		xhci: usb@5200000 {
+			compatible = "allwinner,sun50i-h6-xhci";
+			reg = <0x05200000 0x100000>;
+			interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&ccu CLK_BUS_XHCI>, <&ccu CLK_USB_PHY1>;
+			clock-names = "xhci", "phy";
+			resets = <&ccu RST_BUS_XHCI>, <&ccu RST_USB_PHY1>;
+			reset-names = "xhci", "phy";
+			status = "disabled";
+		};
 	};
 };

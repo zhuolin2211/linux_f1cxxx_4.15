@@ -70,6 +70,14 @@ config USB_XHCI_RCAR
 	  Say 'Y' to enable the support for the xHCI host controller
 	  found in Renesas R-Car ARM SoCs.
 
+config USB_XHCI_SUNXI
+	tristate "xHCI support for Allwinner SoCs"
+	depends on RESET_CONTROLLER
+	depends on ARCH_SUNXI || COMPILE_TEST
+	---help---
+	  Say 'Y' to enable the support for the xHCI host controller
+	  found in some new Allwinner ARMv8 SoCs.
+
 config USB_XHCI_TEGRA
 	tristate "xHCI support for NVIDIA Tegra SoCs"
 	depends on PHY_TEGRA_XUSB
