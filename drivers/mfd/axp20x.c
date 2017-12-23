@@ -281,6 +281,20 @@ static struct resource axp803_pek_resources[] = {
 	},
 };
 
+static struct resource axp806_pek_resources[] = {
+	{
+		.name   = "PEK_DBR",
+		.start  = AXP806_IRQ_PWROK_RISE,
+		.end    = AXP806_IRQ_PWROK_RISE,
+		.flags  = IORESOURCE_IRQ,
+	}, {
+		.name   = "PEK_DBF",
+		.start  = AXP806_IRQ_PWROK_FALL,
+		.end    = AXP806_IRQ_PWROK_FALL,
+		.flags  = IORESOURCE_IRQ,
+	},
+};
+
 static struct resource axp809_pek_resources[] = {
 	{
 		.name   = "PEK_DBR",
@@ -855,6 +869,11 @@ static struct mfd_cell axp803_cells[] = {
 
 static struct mfd_cell axp806_cells[] = {
 	{
+		.id			= 2,
+		.name			= "axp221-pek",
+		.num_resources		= ARRAY_SIZE(axp806_pek_resources),
+		.resources		= axp806_pek_resources,
+	}, {
 		.id			= 2,
 		.name			= "axp20x-regulator",
 	},
