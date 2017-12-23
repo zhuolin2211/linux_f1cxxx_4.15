@@ -7,6 +7,7 @@ axp209 (X-Powers)
 axp221 (X-Powers)
 axp223 (X-Powers)
 axp803 (X-Powers)
+axp805 (X-Powers)
 axp806 (X-Powers)
 axp809 (X-Powers)
 axp813 (X-Powers)
@@ -24,6 +25,7 @@ Required properties:
     * "x-powers,axp221"
     * "x-powers,axp223"
     * "x-powers,axp803"
+    * "x-powers,axp805"
     * "x-powers,axp806"
     * "x-powers,axp809"
     * "x-powers,axp813"
@@ -45,7 +47,7 @@ Optional properties:
 			  board is driving OTG VBus or not.
 			  (axp221 / axp223 / axp813 only)
 
-- x-powers,master-mode: Boolean (axp806 only). Set this when the PMIC is
+- x-powers,master-mode: Boolean (axp805/806 only). Set this when the PMIC is
 			wired for master mode. The default is slave mode.
 
 - <input>-supply: a phandle to the regulator supply node. May be omitted if
@@ -133,7 +135,7 @@ LDO_IO0		: LDO		: ips-supply		: GPIO 0
 LDO_IO1		: LDO		: ips-supply		: GPIO 1
 RTC_LDO		: LDO		: ips-supply		: always on
 
-AXP806 regulators, type, and corresponding input supply names:
+AXP805/806 regulators, type, and corresponding input supply names:
 
 Regulator	  Type		  Supply Name		  Notes
 ---------	  ----		  -----------		  -----
