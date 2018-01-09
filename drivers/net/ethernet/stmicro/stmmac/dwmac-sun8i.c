@@ -105,6 +105,18 @@ static const struct emac_variant emac_variant_a64 = {
 	.support_rgmii = true
 };
 
+static const struct emac_variant emac_variant_h6 = {
+	.default_syscon_value = 0x148000,
+	/*
+	 * The "Internal PHY" of H6 is not on the die. It's on the co-packaged
+	 * AC200 chip instead.
+	 */
+	.soc_has_internal_phy = false,
+	.support_mii = true,
+	.support_rmii = true,
+	.support_rgmii = true
+};
+
 #define EMAC_BASIC_CTL0 0x00
 #define EMAC_BASIC_CTL1 0x04
 #define EMAC_INT_STA    0x08
@@ -1085,6 +1097,8 @@ static const struct of_device_id sun8i_dwmac_match[] = {
 		.data = &emac_variant_a83t },
 	{ .compatible = "allwinner,sun50i-a64-emac",
 		.data = &emac_variant_a64 },
+	{ .compatible = "allwinner,sun50i-h6-emac",
+		.data = &emac_variant_h6 },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, sun8i_dwmac_match);
