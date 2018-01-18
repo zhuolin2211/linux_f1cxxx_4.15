@@ -59,3 +59,16 @@ config MACH_SUN9I
 	select ARM_GIC
 
 endif
+
+menuconfig ARCH_SUNXI_V5
+	bool "Allwinner SoCs"
+	depends on ARCH_MULTI_V5
+	select ARCH_SUNXI
+	select SUN4I_TIMER
+
+if ARCH_SUNXI_V5
+
+config MACH_SUNIV
+	bool "Allwinner new F-series (suniv) SoCs support"
+	default ARCH_SUNXI
+endif
