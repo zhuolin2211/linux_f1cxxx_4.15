@@ -170,8 +170,7 @@ static void enable_global_pages(void)
 static void __init probe_page_size_mask(void)
 {
 	/*
-	 * For TuxOnIce's incremental image support or pagealloc debugging,
-	 * identity mapping will use small pages.
+	 * For pagealloc debugging, identity mapping will use small pages.
 	 * This will simplify cpa(), which otherwise needs to support splitting
 	 * large pages into small in interrupt context, etc.
 	 */
