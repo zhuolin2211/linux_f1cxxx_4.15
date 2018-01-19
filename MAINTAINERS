@@ -13899,8 +13899,7 @@ F:	include/linux/tc.h
 TUXONICE (ENHANCED HIBERNATION)
 P:	Nigel Cunningham
 M:	nigel@nigelcunningham.com.au
-L:	tuxonice-devel@lists.nigelcunningham.com.au
-W:	http://tuxonice.net
+W:	http://nigelcunningham.com.au
 S:	Maintained
 
 TW5864 VIDEO4LINUX DRIVER
