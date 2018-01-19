@@ -865,6 +865,10 @@ static int sun6i_tcon_set_mux(struct sun4i_tcon *tcon,
 	return 0;
 }
 
+static const struct sun4i_tcon_quirks suniv_quirks = {
+	.has_channel_1		= true,
+};
+
 static const struct sun4i_tcon_quirks sun4i_a10_quirks = {
 	.has_channel_1		= true,
 	.set_mux		= sun4i_a10_tcon_set_mux,
@@ -901,6 +905,7 @@ static const struct sun4i_tcon_quirks sun8i_v3s_quirks = {
 };
 
 static const struct of_device_id sun4i_tcon_of_table[] = {
+	{ .compatible = "allwinner,suniv-tcon", .data = &suniv_quirks },
 	{ .compatible = "allwinner,sun4i-a10-tcon", .data = &sun4i_a10_quirks },
 	{ .compatible = "allwinner,sun5i-a13-tcon", .data = &sun5i_a13_quirks },
 	{ .compatible = "allwinner,sun6i-a31-tcon", .data = &sun6i_a31_quirks },
