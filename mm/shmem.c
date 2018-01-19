@@ -4274,7 +4274,7 @@ EXPORT_SYMBOL_GPL(shmem_file_setup);
 struct file *shmem_file_setup_with_mnt(struct vfsmount *mnt, const char *name,
 				       loff_t size, unsigned long flags)
 {
-	return __shmem_file_setup(mnt, name, size, flags, 0, 0);
+	return __shmem_file_setup(mnt, name, size, flags, 0, 1);
 }
 EXPORT_SYMBOL_GPL(shmem_file_setup_with_mnt);
 
