@@ -144,6 +144,7 @@ struct de2_fmt_info {
  * @mod_rate: module clock rate that needs to be set in order to have
  *	a functional block.
  * @is_de3: true, if this is next gen display engine 3.0, false otherwise.
+ * @index: mixer index, needed to properly set TCON TOP
  */
 struct sun8i_mixer_cfg {
 	int		vi_num;
@@ -152,6 +153,7 @@ struct sun8i_mixer_cfg {
 	int		ccsc;
 	unsigned long	mod_rate;
 	bool		is_de3;
+	int		index;
 };
 
 struct sun8i_mixer {
