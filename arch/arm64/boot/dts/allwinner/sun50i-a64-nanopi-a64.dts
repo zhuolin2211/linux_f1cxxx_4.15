@@ -59,6 +59,17 @@
 		stdout-path = "serial0:115200n8";
 	};
 
+	hdmi-connector {
+		compatible = "hdmi-connector";
+		type = "a";
+
+		port {
+			hdmi_con_in: endpoint {
+				remote-endpoint = <&hdmi_out_con>;
+			};
+		};
+	};
+
 	leds {
 		compatible = "gpio-leds";
 
@@ -74,6 +85,10 @@
 		clock-names = "ext_clock";
 		reset-gpios = <&r_pio 0 2 GPIO_ACTIVE_LOW>; /* PL2 */
 	};
+};
+
+&de {
+	status = "okay";
 };
 
 &ehci0 {
@@ -93,6 +108,17 @@
 	status = "okay";
 };
 
+&hdmi {
+	hvcc-supply = <&reg_dldo1>;
+	status = "okay";
+};
+
+&hdmi_out {
+	hdmi_out_con: endpoint {
+		remote-endpoint = <&hdmi_con_in>;
+	};
+};
+
 /* i2c1 connected with gpio headers like pine64, bananapi */
 &i2c1 {
 	pinctrl-names = "default";
@@ -109,6 +135,10 @@
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <7>;
 	};
+};
+
+&mixer1 {
+	status = "okay";
 };
 
 &mmc0 {
@@ -248,6 +278,10 @@
 
 &simplefb_hdmi {
 	vcc-hdmi-supply = <&reg_dldo1>;
+};
+
+&tcon1 {
+	status = "okay";
 };
 
 &uart0 {
