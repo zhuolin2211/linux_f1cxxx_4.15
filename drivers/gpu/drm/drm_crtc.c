@@ -225,16 +225,9 @@ static const char *drm_crtc_fence_get_timeline_name(struct dma_fence *fence)
 	return crtc->timeline_name;
 }
 
-static bool drm_crtc_fence_enable_signaling(struct dma_fence *fence)
-{
-	return true;
-}
-
 static const struct dma_fence_ops drm_crtc_fence_ops = {
 	.get_driver_name = drm_crtc_fence_get_driver_name,
 	.get_timeline_name = drm_crtc_fence_get_timeline_name,
-	.enable_signaling = drm_crtc_fence_enable_signaling,
-	.wait = dma_fence_default_wait,
 };
 
 struct dma_fence *drm_crtc_create_fence(struct drm_crtc *crtc)
@@ -329,9 +322,9 @@ int drm_crtc_init_with_planes(struct drm_device *dev, struct drm_crtc *crtc,
 	crtc->primary = primary;
 	crtc->cursor = cursor;
 	if (primary && !primary->possible_crtcs)
-		primary->possible_crtcs = 1 << drm_crtc_index(crtc);
+		primary->possible_crtcs = drm_crtc_mask(crtc);
 	if (cursor && !cursor->possible_crtcs)
-		cursor->possible_crtcs = 1 << drm_crtc_index(crtc);
+		cursor->possible_crtcs = drm_crtc_mask(crtc);
 
 	ret = drm_crtc_crc_init(crtc);
 	if (ret) {
@@ -468,6 +461,8 @@ static int __drm_mode_set_config_internal(struct drm_mode_set *set,
 	struct drm_crtc *tmp;
 	int ret;
 
+	WARN_ON(drm_drv_uses_atomic_modeset(crtc->dev));
+
 	/*
 	 * NOTE: ->set_config can also disable other crtcs (if we steal all
 	 * connectors from it), hence we need to refcount the fbs across all
@@ -485,10 +480,8 @@ static int __drm_mode_set_config_internal(struct drm_mode_set *set,
 	if (ret == 0) {
 		struct drm_plane *plane = crtc->primary;
 
-		if (!plane->state) {
-			plane->crtc = fb ? crtc : NULL;
-			plane->fb = fb;
-		}
+		plane->crtc = fb ? crtc : NULL;
+		plane->fb = fb;
 	}
 
 	drm_for_each_crtc(tmp, crtc->dev) {
@@ -503,6 +496,7 @@ static int __drm_mode_set_config_internal(struct drm_mode_set *set,
 
 	return ret;
 }
+
 /**
  * drm_mode_set_config_internal - helper to call &drm_mode_config_funcs.set_config
  * @set: modeset config to set
@@ -747,7 +741,11 @@ retry:
 	set.connectors = connector_set;
 	set.num_connectors = crtc_req->count_connectors;
 	set.fb = fb;
-	ret = __drm_mode_set_config_internal(&set, &ctx);
+
+	if (drm_drv_uses_atomic_modeset(dev))
+		ret = crtc->funcs->set_config(&set, &ctx);
+	else
+		ret = __drm_mode_set_config_internal(&set, &ctx);
 
 out:
 	if (fb)

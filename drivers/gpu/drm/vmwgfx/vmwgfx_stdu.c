@@ -1,7 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0 OR MIT
 /******************************************************************************
  *
- * COPYRIGHT © 2014-2015 VMware, Inc., Palo Alto, CA., USA
- * All Rights Reserved.
+ * COPYRIGHT (C) 2014-2015 VMware, Inc., Palo Alto, CA., USA
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the
@@ -1486,7 +1486,7 @@ static int vmw_stdu_init(struct vmw_private *dev_priv, unsigned unit)
 		goto err_free_connector;
 	}
 
-	(void) drm_mode_connector_attach_encoder(connector, encoder);
+	(void) drm_connector_attach_encoder(connector, encoder);
 	encoder->possible_crtcs = (1 << unit);
 	encoder->possible_clones = 0;
 

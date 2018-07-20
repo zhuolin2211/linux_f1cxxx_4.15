@@ -1111,6 +1111,7 @@ static void drm_atomic_plane_print_state(struct drm_printer *p,
 	drm_printf(p, "\tcrtc-pos=" DRM_RECT_FMT "\n", DRM_RECT_ARG(&dest));
 	drm_printf(p, "\tsrc-pos=" DRM_RECT_FP_FMT "\n", DRM_RECT_FP_ARG(&src));
 	drm_printf(p, "\trotation=%x\n", state->rotation);
+	drm_printf(p, "\tnormalized-zpos=%x\n", state->normalized_zpos);
 	drm_printf(p, "\tcolor-encoding=%s\n",
 		   drm_get_color_encoding_name(state->color_encoding));
 	drm_printf(p, "\tcolor-range=%s\n",
@@ -1436,6 +1437,10 @@ static void drm_atomic_connector_print_state(struct drm_printer *p,
 	drm_printf(p, "connector[%u]: %s\n", connector->base.id, connector->name);
 	drm_printf(p, "\tcrtc=%s\n", state->crtc ? state->crtc->name : "(null)");
 
+	if (connector->connector_type == DRM_MODE_CONNECTOR_WRITEBACK)
+		if (state->writeback_job && state->writeback_job->fb)
+			drm_printf(p, "\tfb=%d\n", state->writeback_job->fb->base.id);
+
 	if (connector->funcs->atomic_print_state)
 		connector->funcs->atomic_print_state(p, state);
 }
@@ -1581,7 +1586,7 @@ drm_atomic_set_crtc_for_plane(struct drm_plane_state *plane_state,
 		if (WARN_ON(IS_ERR(crtc_state)))
 			return PTR_ERR(crtc_state);
 
-		crtc_state->plane_mask &= ~(1 << drm_plane_index(plane));
+		crtc_state->plane_mask &= ~drm_plane_mask(plane);
 	}
 
 	plane_state->crtc = crtc;
@@ -1591,7 +1596,7 @@ drm_atomic_set_crtc_for_plane(struct drm_plane_state *plane_state,
 						       crtc);
 		if (IS_ERR(crtc_state))
 			return PTR_ERR(crtc_state);
-		crtc_state->plane_mask |= (1 << drm_plane_index(plane));
+		crtc_state->plane_mask |= drm_plane_mask(plane);
 	}
 
 	if (crtc)
@@ -1700,7 +1705,7 @@ drm_atomic_set_crtc_for_connector(struct drm_connector_state *conn_state,
 							   conn_state->crtc);
 
 		crtc_state->connector_mask &=
-			~(1 << drm_connector_index(conn_state->connector));
+			~drm_connector_mask(conn_state->connector);
 
 		drm_connector_put(conn_state->connector);
 		conn_state->crtc = NULL;
@@ -1712,7 +1717,7 @@ drm_atomic_set_crtc_for_connector(struct drm_connector_state *conn_state,
 			return PTR_ERR(crtc_state);
 
 		crtc_state->connector_mask |=
-			1 << drm_connector_index(conn_state->connector);
+			drm_connector_mask(conn_state->connector);
 
 		drm_connector_get(conn_state->connector);
 		conn_state->crtc = crtc;
@@ -1839,7 +1844,7 @@ drm_atomic_add_affected_connectors(struct drm_atomic_state *state,
 	 */
 	drm_connector_list_iter_begin(state->dev, &conn_iter);
 	drm_for_each_connector_iter(connector, &conn_iter) {
-		if (!(crtc_state->connector_mask & (1 << drm_connector_index(connector))))
+		if (!(crtc_state->connector_mask & drm_connector_mask(connector)))
 			continue;
 
 		conn_state = drm_atomic_get_connector_state(state, connector);
@@ -2423,6 +2428,7 @@ static int prepare_signaling(struct drm_device *dev,
 	}
 
 	for_each_new_connector_in_state(state, conn, conn_state, i) {
+		struct drm_writeback_connector *wb_conn;
 		struct drm_writeback_job *job;
 		struct drm_out_fence_state *f;
 		struct dma_fence *fence;
@@ -2446,7 +2452,8 @@ static int prepare_signaling(struct drm_device *dev,
 		f[*num_fences].out_fence_ptr = fence_ptr;
 		*fence_state = f;
 
-		fence = drm_writeback_get_out_fence((struct drm_writeback_connector *)conn);
+		wb_conn = drm_connector_to_writeback(conn);
+		fence = drm_writeback_get_out_fence(wb_conn);
 		if (!fence)
 			return -ENOMEM;
 

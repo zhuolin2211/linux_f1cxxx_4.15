@@ -126,29 +126,16 @@ enum port {
 
 #define port_name(p) ((p) + 'A')
 
-/*
- * Ports identifier referenced from other drivers.
- * Expected to remain stable over time
- */
-static inline const char *port_identifier(enum port port)
-{
-	switch (port) {
-	case PORT_A:
-		return "Port A";
-	case PORT_B:
-		return "Port B";
-	case PORT_C:
-		return "Port C";
-	case PORT_D:
-		return "Port D";
-	case PORT_E:
-		return "Port E";
-	case PORT_F:
-		return "Port F";
-	default:
-		return "<invalid>";
-	}
-}
+enum tc_port {
+	PORT_TC_NONE = -1,
+
+	PORT_TC1 = 0,
+	PORT_TC2,
+	PORT_TC3,
+	PORT_TC4,
+
+	I915_MAX_TC_PORTS
+};
 
 enum dpio_channel {
 	DPIO_CH0,
@@ -168,7 +155,7 @@ enum aux_ch {
 	AUX_CH_B,
 	AUX_CH_C,
 	AUX_CH_D,
-	_AUX_CH_E, /* does not exist */
+	AUX_CH_E, /* ICL+ */
 	AUX_CH_F,
 };
 
@@ -209,6 +196,7 @@ enum intel_display_power_domain {
 	POWER_DOMAIN_AUX_B,
 	POWER_DOMAIN_AUX_C,
 	POWER_DOMAIN_AUX_D,
+	POWER_DOMAIN_AUX_E,
 	POWER_DOMAIN_AUX_F,
 	POWER_DOMAIN_AUX_IO_A,
 	POWER_DOMAIN_GMBUS,
@@ -273,7 +261,7 @@ struct intel_link_m_n {
 			    &(dev)->mode_config.plane_list,		\
 			    base.head)					\
 		for_each_if((plane_mask) &				\
-			    BIT(drm_plane_index(&intel_plane->base)))
+			    drm_plane_mask(&intel_plane->base)))
 
 #define for_each_intel_plane_on_crtc(dev, intel_crtc, intel_plane)	\
 	list_for_each_entry(intel_plane,				\
@@ -290,7 +278,7 @@ struct intel_link_m_n {
 	list_for_each_entry(intel_crtc,					\
 			    &(dev)->mode_config.crtc_list,		\
 			    base.head)					\
-		for_each_if((crtc_mask) & BIT(drm_crtc_index(&intel_crtc->base)))
+		for_each_if((crtc_mask) & drm_crtc_mask(&intel_crtc->base))
 
 #define for_each_intel_encoder(dev, intel_encoder)		\
 	list_for_each_entry(intel_encoder,			\
