@@ -56,7 +56,7 @@ config PINCTRL_SUN8I_H3_R
 	def_bool MACH_SUN8I || (ARM64 && ARCH_SUNXI)
 	select PINCTRL_SUNXI
 
-config PINCTRL_SUN8I_V3S
+config PINCTRL_SUN8I_V3
 	def_bool MACH_SUN8I
 	select PINCTRL_SUNXI
 
