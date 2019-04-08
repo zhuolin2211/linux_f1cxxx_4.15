@@ -270,6 +270,9 @@ static int sun4i_tcon_get_clk_delay(const struct drm_display_mode *mode,
 static void sun4i_tcon0_mode_set_common(struct sun4i_tcon *tcon,
 					const struct drm_display_mode *mode)
 {
+	/* Configure the dot clock once, for DSI panels */
+	clk_set_rate(tcon->dclk, mode->crtc_clock * 1000);
+
 	/* Set the resolution */
 	regmap_write(tcon->regs, SUN4I_TCON0_BASIC0_REG,
 		     SUN4I_TCON0_BASIC0_X(mode->crtc_hdisplay) |
