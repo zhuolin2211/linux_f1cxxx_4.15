@@ -353,6 +353,11 @@ properties:
           - const: licheepi,licheepi-zero
           - const: allwinner,sun8i-v3s
 
+      - description: Lichee Zero Plus (with S3, without eMMC/SPI Flash)
+        items:
+          - const: sipeed,lichee-zero-plus
+          - const: allwinner,sun8i-s3
+
       - description: Linksprite PCDuino
         items:
           - const: linksprite,a10-pcduino
