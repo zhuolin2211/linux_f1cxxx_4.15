@@ -9,3 +9,9 @@
 	model = "Pine64 PinePhone Developer Batch (1.0)";
 	compatible = "pine64,pinephone-1.0", "allwinner,sun50i-a64";
 };
+
+&backlight {
+	brightness-levels = <0 16 18 20 22 24 26 29 32 35 38 42 46 51 56 62 68 75 83 91 100>;
+	default-brightness-level = <15>;
+	power-supply = <&reg_ldo_io0>;
+};
