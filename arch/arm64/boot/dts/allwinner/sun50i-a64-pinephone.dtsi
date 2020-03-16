@@ -51,6 +51,14 @@
 		};
 	};
 
+	/* A virtual regulator inside the Wi-Fi chip itself */
+	reg_3v3_wifi: regulator-3v3-wifi {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-wifi";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+	};
+
 	speaker_amp: audio-amplifier {
 		compatible = "simple-audio-amplifier";
 		enable-gpios = <&pio 2 7 GPIO_ACTIVE_HIGH>; /* PC7 */
@@ -61,6 +69,11 @@
 		compatible = "gpio-vibrator";
 		enable-gpios = <&pio 3 2 GPIO_ACTIVE_HIGH>; /* PD2 */
 		vcc-supply = <&reg_dcdc1>;
+	};
+
+	wifi_pwrseq: wifi_pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		reset-gpios = <&r_pio 0 2 GPIO_ACTIVE_LOW>; /* PL2 */
 	};
 };
 
@@ -213,6 +226,26 @@
 	disable-wp;
 	bus-width = <4>;
 	status = "okay";
+};
+
+&mmc1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmc1_pins>;
+	vmmc-supply = <&reg_3v3_wifi>;
+	vqmmc-supply = <&reg_dldo4>;
+	mmc-pwrseq = <&wifi_pwrseq>;
+	bus-width = <4>;
+	non-removable;
+	keep-power-in-suspend;
+	status = "okay";
+
+	rtl8723cs: wifi@1 {
+		reg = <1>;
+		compatible = "realtek,rtl8723cs", "brcm,bcm4329-fmac";
+		interrupt-parent = <&r_pio>;
+		interrupts = <0 3 IRQ_TYPE_LEVEL_LOW>; /* PL3 */
+		interrupt-names = "host-wake";
+	};
 };
 
 &mmc2 {
