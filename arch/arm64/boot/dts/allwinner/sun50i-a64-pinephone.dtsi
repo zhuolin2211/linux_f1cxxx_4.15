@@ -170,6 +170,14 @@
 			       "-1", "0", "0",
 			       "0", "0", "-1";
 	};
+
+	/* Light/Proximity sensor */
+	stk3311@48 {
+		compatible = "sensortek,stk3311";
+		reg = <0x48>;
+		interrupt-parent = <&pio>;
+		interrupts = <1 0 IRQ_TYPE_LEVEL_HIGH>; /* PB0 */
+	};
 };
 
 /* Connected to pogo pins (external spring based pinheader for user addons) */
