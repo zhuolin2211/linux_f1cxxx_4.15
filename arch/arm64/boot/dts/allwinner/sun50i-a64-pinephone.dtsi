@@ -93,12 +93,38 @@
 		regulator-max-microvolt = <3300000>;
 	};
 
+	reg_anx1v0: anx1v0 {
+		compatible = "regulator-fixed";
+		regulator-name = "anx1v0";
+		regulator-min-microvolt = <1000000>;
+		regulator-max-microvolt = <1000000>;
+	};
+
+	reg_usb_5v: usb-5v {
+		compatible = "regulator-fixed";
+		regulator-name = "usb-5v";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&pio 3 8 GPIO_ACTIVE_HIGH>; /* PD8 */
+		enable-active-high;
+	};
+
 	reg_vbat_4g: regulator-vbat-4g{
 		compatible = "regulator-fixed";
 		regulator-name = "vbat-4g";
 		regulator-min-microvolt = <3700000>;
 		regulator-max-microvolt = <3700000>;
 		gpio = <&r_pio 0 7 GPIO_ACTIVE_HIGH>; /* PL7 */
+		enable-active-high;
+	};
+
+	/* This is a charge pump for CC1 and CC2 pins on USB-C connector. */
+	reg_vconn5v0: vconn5v0 {
+		compatible = "regulator-fixed";
+		regulator-name = "vconn5v0";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&pio 3 9 GPIO_ACTIVE_HIGH>; /* PD9 */
 		enable-active-high;
 	};
 
@@ -544,7 +570,7 @@
 };
 
 &usb_otg {
-	dr_mode = "peripheral";
+	dr_mode = "otg";
 	status = "okay";
 };
 
