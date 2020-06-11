@@ -85,6 +85,17 @@
 		};
 	};
 
+	hdmi-connector {
+		compatible = "hdmi-connector";
+		type = "a"; /* Left as a placeholder */
+
+		port {
+			hdmi_con_in: endpoint {
+				remote-endpoint = <&hdmi_out_con>;
+			};
+		};
+	};
+
 	/* A virtual regulator inside the Wi-Fi chip itself */
 	reg_3v3_wifi: regulator-3v3-wifi {
 		compatible = "regulator-fixed";
@@ -223,6 +234,17 @@
 
 &ehci1 {
 	status = "okay";
+};
+
+&hdmi {
+	hvcc-supply = <&reg_dldo1>;
+	status = "okay";
+};
+
+&hdmi_out {
+	hdmi_out_con: endpoint {
+		remote-endpoint = <&hdmi_con_in>;
+	};
 };
 
 &i2c0 {
