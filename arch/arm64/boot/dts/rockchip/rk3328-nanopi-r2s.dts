@@ -14,7 +14,6 @@
 	compatible = "friendlyarm,nanopi-r2s", "rockchip,rk3328";
 
 	aliases {
-		mmc0 = &sdmmc;
 	};
 
 	chosen {
