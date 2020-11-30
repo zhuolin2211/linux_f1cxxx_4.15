@@ -54,6 +54,13 @@
 	#size-cells = <1>;
 	interrupt-parent = <&gic>;
 
+	aliases {
+		mmc0 = &mmc0;
+		mmc1 = &mmc1;
+		mmc2 = &mmc2;
+		mmc3 = &mmc3;
+	};
+
 	clocks {
 		#address-cells = <1>;
 		#size-cells = <1>;

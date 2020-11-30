@@ -53,6 +53,10 @@
 
 	aliases {
 		ethernet0 = &emac;
+		mmc0 = &mmc0;
+		mmc1 = &mmc1;
+		mmc2 = &mmc2;
+		mmc3 = &mmc3;
 	};
 
 	chosen {
