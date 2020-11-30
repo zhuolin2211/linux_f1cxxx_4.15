@@ -296,6 +296,7 @@
 
 &i2c0 {
 	status = "okay";
+	clock-frequency = <400000>;
 
 	touchscreen@5d {
 		compatible = "goodix,gt917s";
@@ -313,6 +314,7 @@
 
 &i2c1 {
 	status = "okay";
+	clock-frequency = <400000>;
 
 	/* Magnetometer */
 	lis3mdl: lis3mdl@1e {
