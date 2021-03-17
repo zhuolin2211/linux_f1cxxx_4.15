@@ -1106,6 +1106,8 @@ patternProperties:
     description: Tronsmart
   "^truly,.*":
     description: Truly Semiconductors Limited
+  "^voltafield,.*":
+    description: Voltafield Technology Corp.
   "^visionox,.*":
     description: Visionox
   "^tsd,.*":
