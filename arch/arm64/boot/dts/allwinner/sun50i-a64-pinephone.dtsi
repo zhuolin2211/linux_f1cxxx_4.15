@@ -325,6 +325,14 @@
 	status = "okay";
 	clock-frequency = <400000>;
 
+	/* Alternative magnetometer */
+	af8133j: magnetometer@1c {
+		compatible = "voltafield,af8133j";
+		reg = <0x1c>;
+		avdd-supply = <&reg_dldo1>;
+		dvdd-supply = <&reg_dldo1>;
+	};
+
 	/* Magnetometer */
 	lis3mdl: lis3mdl@1e {
 		compatible = "st,lis3mdl-magn";
