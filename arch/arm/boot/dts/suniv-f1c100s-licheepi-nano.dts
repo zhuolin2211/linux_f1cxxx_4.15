@@ -23,7 +23,7 @@
 	};
 
 	panel: panel {
-		compatible = "qiaodian,qd43003c0-40", "simple-panel";
+		compatible = "lg,lb070wv8","simple-panel";
 		#address-cells = <1>;
 		#size-cells = <0>;
 		enable-gpios = <&pio 4 6 GPIO_ACTIVE_HIGH>;
@@ -64,16 +64,52 @@
 };
 
 &spi0 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&spi0_pins_a>;
-	status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&spi0_pins_a>;
+    status = "okay";
+    spi-max-frequency = <50000000>;
+    flash: w25q128@0 {
+        #address-cells = <1>;
+        #size-cells = <1>;
+        compatible = "winbond,w25q128", "jedec,spi-nor";
+        reg = <0>;   
+        spi-max-frequency = <50000000>;
+        partitions {
+            compatible = "fixed-partitions";
+            #address-cells = <1>;
+            #size-cells = <1>;
 
-	flash@0 {
-		#address-cells = <1>;
-		#size-cells = <1>;
-		compatible = "winbond,w25q128", "jedec,spi-nor";
-		reg = <0>;
-		spi-max-frequency = <40000000>;
+            partition@0 {
+                label = "u-boot";
+                reg = <0x000000 0x100000>;
+                read-only;
+            };
+
+            partition@100000 {
+                label = "dtb";
+                reg = <0x100000 0x10000>;
+                read-only;
+            };
+
+            partition@110000 {
+                label = "kernel";
+                reg = <0x110000 0x400000>;
+                read-only;
+            };
+
+            partition@510000 {
+                label = "rootfs";
+                reg = <0x510000 0xAF0000>;
+            };
+        };
+    };
+};   
+
+&i2c0 {
+	status = "okay";
+	ns2009: ns2009@48 {
+	compatible = "nsiway,ns2009";	
+	reg = <0x48>;
 	};
 };
 
@@ -100,8 +136,14 @@
 	dr_mode = "otg";
 	status = "okay";
 };
-
 &usbphy {
-	usb0_id_det-gpio = <&pio 4 2 GPIO_ACTIVE_HIGH>; /* PE2 */
+	usb0_id_det-gpio = <&pio 4 2 GPIO_ACTIVE_LOW>; /* PE2 */
+	status = "okay";
+};
+&codec {
+	allwinner,audio-routing =
+		"Headphone", "HP",
+		"Headphone", "HPCOM",
+		"MIC", "Mic";
 	status = "okay";
 };

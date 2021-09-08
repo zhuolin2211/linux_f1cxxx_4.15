@@ -5,6 +5,7 @@
  */
 
 #include <linux/clk-provider.h>
+#include <linux/io.h>
 #include <linux/of_address.h>
 
 #include "ccu_common.h"
@@ -104,12 +105,12 @@ static struct ccu_nk pll_periph_clk = {
 };
 
 static const char * const cpu_parents[] = { "osc32k", "osc24M",
-					     "pll-cpu" , "pll-cpu" };
+					     "pll-cpu", "pll-cpu" };
 static SUNXI_CCU_MUX(cpu_clk, "cpu", cpu_parents,
 		     0x050, 16, 2, CLK_IS_CRITICAL | CLK_SET_RATE_PARENT);
 
 static const char * const ahb_parents[] = { "osc32k", "osc24M",
-					    "cpu" , "pll-periph" };
+					    "cpu", "pll-periph" };
 static const struct ccu_mux_var_prediv ahb_predivs[] = {
 	{ .index = 3, .shift = 6, .width = 2 },
 };
@@ -144,6 +145,8 @@ static struct clk_div_table apb_div_table[] = {
 static SUNXI_CCU_DIV_TABLE(apb_clk, "apb", "ahb",
 			   0x054, 8, 2, apb_div_table, 0);
 
+static SUNXI_CCU_GATE(bus_dma_clk,	"bus-dma",	"ahb",
+		      0x060, BIT(6), 0);
 static SUNXI_CCU_GATE(bus_mmc0_clk,	"bus-mmc0",	"ahb",
 		      0x060, BIT(8), 0);
 static SUNXI_CCU_GATE(bus_mmc1_clk,	"bus-mmc1",	"ahb",
@@ -238,7 +241,7 @@ static SUNXI_CCU_MUX_WITH_GATE(spdif_clk, "spdif", i2s_spdif_parents,
 /* The BSP header file has a CIR_CFG, but no mod clock uses this definition */
 
 static SUNXI_CCU_GATE(usb_phy0_clk,	"usb-phy0",	"osc24M",
-		      0x0cc, BIT(8), 0);
+		      0x0cc, BIT(1), 0);
 
 static SUNXI_CCU_GATE(dram_ve_clk,	"dram-ve",	"pll-ddr",
 		      0x100, BIT(0), 0);
@@ -316,6 +319,7 @@ static struct ccu_common *suniv_ccu_clks[] = {
 	&cpu_clk.common,
 	&ahb_clk.common,
 	&apb_clk.common,
+	&bus_dma_clk.common,
 	&bus_mmc0_clk.common,
 	&bus_mmc1_clk.common,
 	&bus_dram_clk.common,
@@ -397,6 +401,7 @@ static struct clk_hw_onecell_data suniv_hw_clks = {
 		[CLK_CPU]		= &cpu_clk.common.hw,
 		[CLK_AHB]		= &ahb_clk.common.hw,
 		[CLK_APB]		= &apb_clk.common.hw,
+		[CLK_BUS_DMA]		= &bus_dma_clk.common.hw,
 		[CLK_BUS_MMC0]		= &bus_mmc0_clk.common.hw,
 		[CLK_BUS_MMC1]		= &bus_mmc1_clk.common.hw,
 		[CLK_BUS_DRAM]		= &bus_dram_clk.common.hw,
@@ -456,6 +461,7 @@ static struct clk_hw_onecell_data suniv_hw_clks = {
 static struct ccu_reset_map suniv_ccu_resets[] = {
 	[RST_USB_PHY0]		=  { 0x0cc, BIT(0) },
 
+	[RST_BUS_DMA]		=  { 0x2c0, BIT(6) },
 	[RST_BUS_MMC0]		=  { 0x2c0, BIT(8) },
 	[RST_BUS_MMC1]		=  { 0x2c0, BIT(9) },
 	[RST_BUS_DRAM]		=  { 0x2c0, BIT(14) },
