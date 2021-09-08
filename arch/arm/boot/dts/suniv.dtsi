@@ -107,7 +107,18 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 		};
-
+		i2c0: i2c@IC27000 {
+			compatible = "allwinner,sun6i-a31-i2c";
+                    	reg = <0x01C27000 0x400>;
+                    	interrupts = <7>;
+                    	clocks = <&ccu CLK_BUS_I2C0>;
+                    	resets = <&ccu RST_BUS_I2C0>;
+                    	pinctrl-names = "default";
+                    	pinctrl-0 = <&i2c0_pins>;
+                    	status = "disabled";
+                    	#address-cells = <1>;
+                    	#size-cells = <0>;
+		};
 		tcon0: lcd-controller@1c0c000 {
 			compatible = "allwinner,suniv-tcon";
 			reg = <0x01c0c000 0x1000>;
@@ -219,7 +230,10 @@
 				pins = "PC0", "PC1", "PC2", "PC3";
 				function = "spi0";
 			};
-
+			i2c0_pins: i2c0 {
+				pins = "PE11","PE12";
+				function = "i2c0";	
+			};
 			lcd_rgb666_pins: lcd-rgb666-pins {
 				pins = "PD0", "PD1", "PD2", "PD3", "PD4",
 				       "PD5", "PD6", "PD7", "PD8", "PD9",
@@ -310,7 +324,27 @@
 			#phy-cells = <1>;
 			status = "disabled";
 		};
+		dma: dma-controller@1c02000 {
+			compatible = "allwinner,suniv-dma";
+			reg = <0x01c02000 0x1000>;
+			interrupts = <18>;
+			clocks = <&ccu CLK_BUS_DMA>;
+			resets = <&ccu RST_BUS_DMA>;
+			#dma-cells = <2>;
+		};
 
+		codec: codec@1c23c00 {
+			compatible = "allwinner,suniv-codec";
+			reg = <0x01c23c00 0x400>;
+			interrupts = <21>;
+			clocks = <&ccu CLK_BUS_CODEC>,
+				 <&ccu CLK_CODEC>;
+			clock-names = "apb", "codec";
+			resets = <&ccu RST_BUS_CODEC>;
+			dmas = <&dma 0 12>, <&dma 0 12>;
+			dma-names = "rx", "tx";
+			status = "disabled";
+		};
 		fe0: display-frontend@1e00000 {
 			compatible = "allwinner,suniv-display-frontend";
 			reg = <0x01e00000 0x20000>;
