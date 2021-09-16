@@ -345,6 +345,14 @@
 			dma-names = "rx", "tx";
 			status = "disabled";
 		};
+
+		lradc: lradc@1c23400 {
+        		compatible = "allwinner,sun4i-a10-lradc-keys";
+        		reg = <0x01c23400 0x400>;
+        		interrupts = <22>;
+        		status = "disabled";
+		};
+		
 		fe0: display-frontend@1e00000 {
 			compatible = "allwinner,suniv-display-frontend";
 			reg = <0x01e00000 0x20000>;

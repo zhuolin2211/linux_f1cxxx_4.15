@@ -687,6 +687,7 @@ static const struct option_blacklist_info yuga_clm920_nc5_blacklist = {
 };
 
 static const struct usb_device_id option_ids[] = {
+	{USB_DEVICE(0x1782,0X4E00)},
 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA_LIGHT) },
@@ -2088,6 +2089,7 @@ static struct usb_serial_driver option_1port_device = {
 #ifdef CONFIG_PM
 	.suspend           = usb_wwan_suspend,
 	.resume            = usb_wwan_resume,
+	.reset_resume      = usb_wwan_resume,
 #endif
 };
 
@@ -2125,6 +2127,11 @@ static int option_probe(struct usb_serial *serial,
 	if (dev_desc->idVendor == cpu_to_le16(SAMSUNG_VENDOR_ID) &&
 	    dev_desc->idProduct == cpu_to_le16(SAMSUNG_PRODUCT_GT_B3730) &&
 	    iface_desc->bInterfaceClass != USB_CLASS_CDC_DATA)
+		return -ENODEV;
+	
+	if(serial->dev->descriptor.idVendor == cpu_to_le16(0x1782) && 
+	   serial->dev->descriptor.idProduct == cpu_to_le16(0x4e00) && 
+	   serial->interface->cur_altsetting->desc.bInterfaceNumber <=1 )
 		return -ENODEV;
 
 	/* Store the blacklist info so we can use it during attach. */
