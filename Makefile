@@ -7,6 +7,9 @@ SUBLEVEL = 0
 EXTRAVERSION = -rc8
 NAME = Fearless Coyote
 
+ARCH ?= arm
+CROSS_COMPILE ?= arm-linux-gnueabi-
+
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
 # More info can be located in ./README

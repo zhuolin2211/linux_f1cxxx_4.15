@@ -230,6 +230,10 @@
 				pins = "PC0", "PC1", "PC2", "PC3";
 				function = "spi0";
 			};
+			spi1_pins_a: spi1-pins-pc {
+                                pins = "PA2", "PA0", "PA3", "PA1";
+                                function = "spi1";
+                        };
 			i2c0_pins: i2c0 {
 				pins = "PE11","PE12";
 				function = "i2c0";	

@@ -105,6 +105,13 @@
     };
 };   
 
+&spi1 {
+    pinctrl-names = "default";
+    pinctrl-0 = <&spi1_pins_a>;
+    status = "okay";
+    spi-max-frequency = <50000000>;
+};
+
 &i2c0 {
 	status = "okay";
 	ns2009: ns2009@48 {
