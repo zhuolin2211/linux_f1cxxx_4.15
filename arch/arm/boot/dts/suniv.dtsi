@@ -5,6 +5,7 @@
 
 #include <dt-bindings/clock/suniv-ccu.h>
 #include <dt-bindings/reset/suniv-ccu.h>
+#include <dt-bindings/dma/sun4i-a10.h>
 
 / {
 	#address-cells = <1>;
