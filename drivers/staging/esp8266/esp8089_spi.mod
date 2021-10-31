@@ -1,0 +1,2 @@
+drivers/staging/esp8089/esp_debug.o drivers/staging/esp8089/sdio_sif_esp.o drivers/staging/esp8089/spi_sif_esp.o drivers/staging/esp8089/esp_io.o drivers/staging/esp8089/esp_file.o drivers/staging/esp8089/esp_main.o drivers/staging/esp8089/esp_sip.o drivers/staging/esp8089/esp_ext.o drivers/staging/esp8089/esp_ctrl.o drivers/staging/esp8089/esp_mac80211.o drivers/staging/esp8089/esp_debug.o drivers/staging/esp8089/esp_utils.o drivers/staging/esp8089/esp_pm.o drivers/staging/esp8089/testmode.o drivers/staging/esp8089/ESP8089_dts.o
+
